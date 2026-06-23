@@ -149,6 +149,86 @@ later. Almost everything else in this chapter is really about doing that step
 honestly: keeping the estimand faithful to the research question, instead of
 letting the question quietly drift toward whatever the method happens to deliver.
 
+## Potential outcomes: the formal language for the unit-level quantity {#sec-po}
+
+A research question commits you to a comparison — *"does flooding affect
+climate-policy support?"* means support under flooding versus support under some
+counterfactual. **Potential outcomes** are the formal device that forces you to
+say exactly what that counterfactual is.
+
+**The notation.** Write $Y_i(d)$ for the outcome unit $i$ *would have* if
+treatment were set to value $d$ — not predicted from $i$'s covariates, but
+*set*, as if by an outside hand. Under binary treatment, each unit has two
+potential outcomes, $Y_i(1)$ if treated and $Y_i(0)$ if not, and the individual
+causal effect is their difference:
+
+$$\delta_i = Y_i(1) - Y_i(0)$$
+
+The notation is useful precisely because it forces three commitments that verbal
+questions evade:
+
+1. **What is the treatment, exactly?** $Y_i(d)$ requires $d$ to be defined
+   precisely enough to intervene on. Treatments that resist potential-outcome
+   notation — "exposure to polarisation," "experiencing poverty" — resist
+   credible designs for the same reason: the intervention is not pinned down.
+2. **What is the counterfactual?** The contrast $Y_i(1) - Y_i(0)$ names both
+   sides explicitly. A question that says "the effect of X on Y" leaves the
+   baseline vague; the potential-outcome contrast does not.
+3. **For which unit?** The subscript $i$ anchors the effect to a specific unit.
+   Population-level summaries come later; the unit-level quantity is the
+   foundation.
+
+**The fundamental problem — as an estimand problem.** The ideal causal estimand
+would be a table of individual effects $\delta_i$: you would know, for each unit,
+exactly how much treatment moved them. This is definitionally impossible. The
+**switching equation**
+
+$$Y_i = D_i\,Y_i(1) + (1 - D_i)\,Y_i(0)$$
+
+formalises why: $Y_i$ is whichever potential outcome corresponds to the treatment
+actually received; the other is never observed. This is not a data limitation
+that better measurement would fix — it is a logical constraint. The same unit
+cannot simultaneously be treated and untreated.
+
+```{r}
+#| label: demo-po-table
+#| message: false
+set.seed(2026)
+n     <- 8
+y0    <- round(rnorm(n, mean = 3, sd = 1), 1)     # Y(0): outcome if untreated
+delta <- round(runif(n, min = -0.5, max = 2), 1)   # individual effects
+y1    <- y0 + delta                                 # Y(1): outcome if treated
+d     <- c(1, 0, 1, 0, 1, 1, 0, 1)                # treatment received
+
+# The full potential-outcomes schedule — inaccessible in practice.
+full <- data.frame(unit = 1:n, D = d,
+                   `Y(0)` = y0, `Y(1)` = y1, delta = delta,
+                   check.names = FALSE)
+
+# What a researcher actually observes.
+obs  <- data.frame(unit = 1:n, D = d,
+                   `Y(0)` = ifelse(d == 0, y0, NA),
+                   `Y(1)` = ifelse(d == 1, y1, NA),
+                   delta  = rep(NA_real_, n),
+                   check.names = FALSE)
+
+cat("-- ideal (never observed) --\n"); print(full, row.names = FALSE)
+cat("\n-- observed --\n");             print(obs,  row.names = FALSE)
+```
+
+The column of $Y_i(0)$ for treated units and $Y_i(1)$ for controls — and all of
+$\delta_i$ — is missing in practice. The table every causal-inference textbook
+shows as "what you would want" is not a simplification; it is literally
+unavailable.
+
+**Why this matters for estimands.** Because individual effects cannot be the
+estimand, the practical question becomes: *which population summary of the
+$\delta_i$?* That is what ATE, ATT, ATU, LATE, and every other entry in
+@sec-fieldguide differ on. The three-part LJS anatomy below is the framework for
+answering it: the unit-level quantity (almost always $\delta_i$ for causal
+estimands), the target population, and the aggregation rule that turns a
+distribution of unobservable individual effects into a single estimable target.
+
 ## The Lundberg–Johnson–Stewart anatomy
 
 Lundberg, Johnson, and Stewart (2021, *ASR*) give the most useful working
