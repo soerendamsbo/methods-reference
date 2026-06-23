@@ -1,0 +1,1640 @@
+---
+title: "Estimands: A Working Primer"
+subtitle: "Seeing them, writing them, and critiquing them in real research"
+engine: knitr
+---
+
+```{=html}
+<!-- ============ Quiz engine: client-side, no server, survives embed-resources ============ -->
+<script>
+function estCheck(id){
+  const q = document.getElementById(id);
+  const chosen = q.querySelector('input[type=radio]:checked');
+  const fb = q.querySelector('.est-feedback');
+  if(!chosen){ fb.innerHTML = '<em>Pick an answer first.</em>'; fb.className = 'est-feedback show neutral'; return; }
+  const ok = chosen.getAttribute('data-correct') === 'true';
+  const why = chosen.getAttribute('data-why') || '';
+  fb.innerHTML = (ok ? '✅ <strong>Correct.</strong> ' : '✗ <strong>Not quite.</strong> ') + why;
+  fb.className = 'est-feedback show ' + (ok ? 'ok' : 'no');
+  // mark options
+  q.querySelectorAll('label.est-opt').forEach(l => l.classList.remove('picked-ok','picked-no'));
+  chosen.closest('label').classList.add(ok ? 'picked-ok' : 'picked-no');
+}
+</script>
+```
+
+::: {.callout-note appearance="simple"}
+This is a self-contained learning chapter. The multiple-choice checkpoints run
+entirely in your browser, and every R code block shows its computed output
+inline, so the whole document works offline with no dependencies.
+:::
+
+# Orientation {#sec-orientation}
+
+This chapter is about one deceptively small word. An **estimand** is *the thing
+you are trying to learn* — the quantity that would answer your question if you
+had infinite data and no estimation problems. It is not a method, not a
+coefficient, and not a number you report. It is the target: the precise,
+answerable form of your **research question** — the hinge between a sentence in
+your introduction (*"does X affect Y, and for whom?"*) and a quantity a method
+can actually chase.
+
+The trouble is that in clean textbook cases the target is obvious, and in real
+political-science cases it is often not. The same design can carry several
+plausible estimands; methods quietly substitute one target for another; and a
+paper can state one estimand in its design section and defend a different one in
+its conclusion. The cost of fuzziness here is not pedantic. It is the difference
+between *"this program works"* and *"this program worked for the people who were
+already getting it,"* which are different claims with different policy
+implications.
+
+## Who this is for
+
+You are comfortable with research design, causal inference, and estimation. You
+can already define an ATE, you know an estimator from an estimate, you have seen
+LATE and the potential-outcomes notation. **This chapter does not re-teach any
+of that as new material.** It treats the definitions as a *fast recap* and
+spends its real estate on the part that stays hard:
+
+- using the taxonomy as working vocabulary, not flashcards;
+- reasoning *from a messy design to its actual estimand*;
+- spotting where intuition fails and the target quietly shifts;
+- writing a clean estimand sentence in a paper;
+- critiquing other people's estimands out loud, in workshop and referee language.
+
+## How to read it
+
+Read @sec-recap and @sec-what fast — they set notation and the Lundberg–Johnson–Stewart
+(LJS) anatomy you will reuse everywhere. @sec-fieldguide and @sec-designmap are the
+**reference** sections — the taxonomy of estimands and the map from designs to the
+estimands they target; skim them now, return later. The heart of the chapter is
+@sec-breaks (where intuition breaks) through @sec-critique (critiquing others), with
+@sec-sampling adding the population question most survey work leaves implicit.
+@sec-cad applies everything to a real coastal-flooding study — skip it if you are
+an external reader.
+
+::: {.callout-important appearance="simple"}
+**The point is not more notation. It is clearer targets.** If you finish this
+chapter able to recite definitions but unable to say, in a seminar, *"I think
+the design identifies X but the paper is written as if it identifies Y,"* the
+chapter has failed.
+:::
+
+# Fast recap: estimand, estimator, estimate {#sec-recap}
+
+Three words that sound similar and are constantly conflated. Keep them in three
+different drawers.
+
+| Term | What it is | Mean example | Lives where |
+|---|---|---|---|
+| **Estimand** | The quantity you want to know | The population mean income, $\mu = E[Y]$ | In the world (a fact) |
+| **Estimator** | The *rule/procedure* for guessing it | "Take the sample average," $\bar Y = \tfrac1n\sum Y_i$ | In your method |
+| **Estimate** | The *realised number* the rule produces | $\bar y = 41{,}300$ kr. | In your output table |
+
+: The three drawers {.striped}
+
+The estimand exists whether or not you ever collect data. The estimator is a
+function of data you have not yet seen. The estimate is what you get once you
+plug the data in — a single draw from the estimator's sampling distribution. A
+good estimator is one whose estimates cluster around the estimand; "unbiased,"
+"consistent," and "efficient" are all statements about *estimator behaviour
+relative to a fixed estimand*. None of them mean anything until the estimand is
+pinned down.
+
+```{r}
+#| label: demo-mean
+#| message: false
+set.seed(2026)
+
+# The ESTIMAND: a population mean we are pretending to chase.
+mu <- 41300                      # true mean income (kr.), unknown in real life
+
+# Draw one sample from that population.
+pop_sd <- 9000
+y <- rnorm(40, mean = mu, sd = pop_sd)
+
+# The ESTIMATOR: the sample-mean rule.  The ESTIMATE: the number it returns.
+estimate <- mean(y)
+
+cat("Estimand (truth):", mu, "\n")
+cat("Estimate (this sample):", round(estimate), "\n")
+cat("Estimation error:", round(estimate - mu), "\n")
+```
+
+The *estimand* `mu` never moves; the *estimate* jumps around it (change the seed
+or `n` and it lands somewhere new). That gap is the entire subject of statistics
+— and none of it is meaningful until `mu` is defined.
+
+That is the whole recap. The hard part is not "what is an estimand" in the
+abstract — it is *which* estimand a real design is actually chasing, and whether
+it is the one you wanted.
+
+# What an estimand actually is {#sec-what}
+
+## From research question to estimand {#sec-rq}
+
+Every estimand starts life as a **research question** — usually a single
+sentence in your introduction: *"Does flooding make people more supportive of
+climate policy?"* That sentence is not yet an estimand. It does not say *whose*
+support, measured against *what* counterfactual, *averaged how*. The estimand is
+what you get when you force the research question to become precise enough that a
+method could, in principle, answer it.
+
+This research-question→estimand step is the most consequential — and most
+skipped — move in a design. A loosely worded research question is compatible with
+*several* estimands (effect on the treated? on everyone? on the people a policy
+would actually reach?), and they need not agree. Choosing among them is a
+substantive commitment about what you want to know, not a technicality to settle
+later. Almost everything else in this chapter is really about doing that step
+honestly: keeping the estimand faithful to the research question, instead of
+letting the question quietly drift toward whatever the method happens to deliver.
+
+## The Lundberg–Johnson–Stewart anatomy
+
+Lundberg, Johnson, and Stewart (2021, *ASR*) give the most useful working
+decomposition. A **theoretical estimand** has exactly three parts, and naming
+them is most of the battle:
+
+1. **A unit-level quantity.** What is the causal (or descriptive) quantity for a
+   *single* unit? Usually a contrast of potential outcomes, $Y_i(1) - Y_i(0)$ —
+   "this person's outcome if treated minus if untreated." This is never observed
+   for any unit (the fundamental problem of causal inference); the switching
+   equation $Y_i = D_i Y_i(1) + (1-D_i)Y_i(0)$ only ever shows you one side.
+2. **A target population.** *Over whom* are we summarising? Everyone? The
+   treated? Compliers? Residents of flooded communities? This is the part that
+   silently changes most often.
+3. **An aggregation rule.** *How* do we summarise the unit-level quantities over
+   that population — a simple mean, a weighted mean, a quantile, a difference of
+   subgroup means? This is the least intuitive of the three and the most often
+   left implicit; @sec-aggregation takes it apart.
+
+Write those three down and you have stated a theoretical estimand. Skip any one
+and you have hand-waved. Notice that "ATE" only fixes parts 1 and 3 (a
+difference in potential outcomes, simple-averaged); the *population* is left to
+context — which is exactly why "the ATE" is ambiguous more often than people
+admit.
+
+::: {.callout-tip appearance="simple"}
+**The three questions to ask of any result.** *What is the unit-level quantity?
+Whose average is this? What population is doing the averaging?* If you cannot
+answer all three about a paper's headline number, the estimand is not yet
+specified — no matter how precise the standard error looks.
+:::
+
+## Three worked anatomies (and the questions they answer)
+
+The fastest way to make the anatomy habitual is to watch the *population* slot
+change while everything else stays put. Each example below starts from a
+one-sentence research question and ends with a named estimand.
+
+- **Research question:** *"Does a get-out-the-vote call make people vote?"*
+  *Unit quantity:* registered voter $i$'s turnout if called minus if not called.
+  *Target population:* all registered voters in the city the campaign covers.
+  *Aggregation:* simple mean. → **ATE** of the call for that city's electorate.
+- **Research question:** *"Did the 2014 wage-floor increase change employment at
+  the firms it bound?"* *Unit quantity:* firm $j$'s headcount if the floor rose
+  minus if it had not. *Target population:* firms actually bound by the increase
+  (those paying below the new floor). *Aggregation:* mean over bound firms. →
+  **ATT** — note the population is *the treated*, by construction.
+- **Research question:** *"Would extending free school meals to currently-ineligible
+  families improve attendance?"* *Unit quantity:* child $i$'s attendance if newly
+  enrolled minus if not. *Target population:* children *not currently* eligible.
+  *Aggregation:* simple mean. → **ATU** — the population is the people the policy
+  has *not yet* reached, which is exactly why this is the hardest one to identify.
+
+Same three-part skeleton each time; the research question dictates *whose* effect,
+and that single choice is the difference between an ATE, an ATT, and an ATU. Write
+the question down first and the population slot usually fills itself.
+
+## The aggregation rule: "averaged how?" {#sec-aggregation}
+
+All three anatomies above quietly used the *same* aggregation — a simple,
+unweighted mean. That is the slot people skip, because the mean feels automatic
+rather than chosen. It isn't. The same unit-level contrast over the same
+population can be summarised in several ways, and they answer different questions:
+
+- **Unweighted mean** — the default behind ATE/ATT/…: every unit counts equally,
+  $E[\delta_i]$. The right choice when you genuinely want the population-average
+  effect and no unit deserves more weight than another.
+- **Weighted mean** — units count differently, $\sum_i w_i\,\delta_i$. The weights
+  encode *what you want the number to represent*: design/sampling weights to map a
+  non-representative sample onto a target population (@sec-sampling); overlap or
+  propensity weights to emphasise the region where treated and control are
+  comparable (@sec-restrict); policy weights to count people in proportion to whom
+  a decision would actually touch. Beware that OLS supplies its *own* implicit
+  weights (@sec-varweight) — rarely the ones you would have picked.
+- **Quantile treatment effects (QTE)** — the effect on the *quantiles of the
+  outcome distribution* rather than its mean: how the 10th or 90th percentile of
+  $Y$ shifts. A programme can leave the mean untouched while lifting the bottom of
+  the distribution, or raise the average only by helping those already doing well.
+  (A subtlety: the QTE compares the *marginal* quantiles under treatment and
+  control, $Q_\tau(Y(1)) - Q_\tau(Y(0))$ — it is *not* "the effect for the person
+  at the $\tau$-th percentile," which would need the unobserved joint distribution.)
+- **Difference vs. ratio (the scale)** — a mean *difference* $E[Y(1)]-E[Y(0)]$ and
+  a *ratio* $E[Y(1)]/E[Y(0)]$ (risk ratio, odds ratio) are different aggregations
+  of the same outcomes. "No effect" looks the same on both, but "constant effect"
+  does not: effects that are constant on the difference scale are heterogeneous on
+  the ratio scale, and vice versa. The scale is part of the estimand, not a
+  reporting afterthought.
+- **Other functionals** — a *difference of subgroup means* (do liberals move more
+  than conservatives?) is itself an aggregation choice, and it is the estimand
+  behind the **interaction (moderation) analysis** so common in political science:
+  a treatment × moderator term does not estimate a single average effect but
+  exactly this *difference in CATEs* across groups. Worth saying out loud, because
+  it is easy to run the interaction and report the coefficient without noticing
+  that the target has shifted from "the effect" to "the *gap between* two effects."
+  The tempting "share who benefit," $P(\delta_i > 0)$, is another such functional —
+  but (unlike the mean) it generally cannot be recovered without assumptions about
+  who-gains-what.
+
+::: {.callout-tip appearance="simple"}
+## Why this slot is less intuitive than "for whom"
+Changing the *population* changes the **set** you average over — easy to picture.
+Changing the *aggregation* changes the **summary functional** applied to the same
+set, which is more abstract. The intuition that fixes it: two programmes with
+*identical* average effects can do completely different things — one nudging
+everyone slightly, the other helping half and harming half. Same mean, opposite
+policies. If your question is about *who ends up where*, not just the centre of
+mass, the simple mean is the wrong aggregation no matter how cleanly you have
+named the population.
+:::
+
+## Theoretical vs. empirical (statistical) estimand
+
+Keep two layers distinct:
+
+- The **theoretical estimand** is the substantive target — defined in the world,
+  in terms of potential outcomes over a population. It exists before any data or
+  identification strategy.
+- The **empirical (statistical) estimand** is the function of *observable* data
+  distributions that you claim equals the theoretical estimand *if your
+  identifying assumptions hold*. "Difference in conditional means given the
+  back-door set," "the Wald ratio," "the DiD contrast" — these are empirical
+  estimands.
+
+Identification is the bridge between the two. The empirical estimand can be
+crystal clear (a well-defined functional of the data) while the theoretical
+estimand it is supposed to represent is vague or contested. That gap —
+*"the statistical object is clean, but what it is an estimand* of *is unclear"* —
+is one of the most common things worth saying in a referee report.
+
+## Descriptive estimands have an anatomy too {#sec-descriptive}
+
+Not every estimand is a potential-outcome contrast. A *descriptive* estimand —
+the gender gap in turnout, the share of a legislature's bills that are amended,
+the trend in partisan affect — still has the full LJS anatomy: a **unit-level
+quantity** that is simply a measured attribute rather than a $Y_i(1)-Y_i(0)$
+difference; a **target population** to average over; and an **aggregation rule**
+(mean, share, quantile, between-group difference). What changes is *identification*.
+There is no counterfactual to defend, so the work is entirely about **measurement
+and sampling** — does the variable capture the concept, and does the sample
+represent the population? — not about confounding or assignment.
+
+The discipline is identical: "the gender gap in turnout" is under-specified until
+you name *whose* turnout (which population), *measured how*, and *summarised how*.
+A precise descriptive estimand is no less demanding than a causal one; it just
+fails in different ways — measurement error and sampling bias rather than
+confounding. Much of @sec-sampling applies to descriptive and causal estimands
+alike, because both depend on the same target-population slot.
+
+## Same design, different estimand — because the population moved {#sec-popmoved}
+
+Hold the data-generating process and the estimator completely fixed. Change only
+*whose* effect you are averaging, and you have a different estimand:
+
+::: {.contrast}
+**Contrast 1 — same question shape, different target population.**
+A job-training program is evaluated with an experiment among *volunteers*.
+
+- *Estimand A (ATE on volunteers):* average effect for the population that
+  signed up. Answers "did the program help the people who took it?"
+- *Estimand B (ATE on the eligible population, including non-volunteers):*
+  answers "what if we made it universal?"
+
+Same trial, same regression. But B requires the effect for people who chose not
+to enrol — exactly the people the trial never treated. If those who benefit most
+self-select in (selection on gains), A > B and reporting A as if it were B
+overstates the case for expansion. The estimator did not change; the *target
+population* did, and with it the estimand.
+:::
+
+```{=html}
+<div class="est-quiz" id="q-anatomy">
+<p class="est-stem"><strong>Checkpoint.</strong> A paper reports "the effect of
+attending a job fair on employment, estimated by comparing attendees to
+non-attendees with rich controls." The authors call it "the ATE." On the LJS
+anatomy, which part is most clearly under-specified?</p>
+<label class="est-opt"><input type="radio" name="q-anatomy" data-correct="false" data-why="The unit-level contrast (employed if attend vs. if not) is actually fine here — it's a standard binary potential-outcome difference."> The unit-level quantity</label>
+<label class="est-opt"><input type="radio" name="q-anatomy" data-correct="true" data-why="&quot;The ATE&quot; fixes the contrast and the simple-mean aggregation, but not the population. Attendees and non-attendees differ; with controls you most plausibly identify an effect on the treated (or on a covariate-overlap region), not the whole population. The target population is the unstated part."> The target population</label>
+<label class="est-opt"><input type="radio" name="q-anatomy" data-correct="false" data-why="The aggregation (a simple average) is implied by &quot;ATE&quot; and is not the main ambiguity — the ambiguity is over whom."> The aggregation rule</label>
+<label class="est-opt"><input type="radio" name="q-anatomy" data-correct="false" data-why="Something is under-specified: &quot;the ATE&quot; names a contrast and an averaging rule but leaves the population to context, and here treated/control differ systematically."> Nothing — it is fully specified</label>
+<button class="est-btn" onclick="estCheck('q-anatomy')">Check answer</button>
+<div class="est-feedback"></div>
+</div>
+```
+
+# Field guide: the estimand taxonomy {#sec-fieldguide}
+
+Reference section. Each entry gives a plain-language definition, the minimal
+notation, when it is the *right* target, the nearest confusion, and a one-line
+example. The skimmable table at the end (@sec-taxotable) is the part to bookmark.
+
+Throughout, $Y_i(1), Y_i(0)$ are unit $i$'s potential outcomes under treatment
+and control, $D_i$ is treatment received, and $\delta_i = Y_i(1) - Y_i(0)$ is
+the (unobservable) individual effect.
+
+## ATE — Average Treatment Effect
+
+**Plain language.** The average effect if you treated *everyone* versus *no one*,
+across the entire population. **Notation.** $\text{ATE} = E[\delta_i] = E[Y_i(1) - Y_i(0)]$.
+**Right target when.** Universal or near-universal interventions; "what if
+everyone got this?"; mandates, across-the-board policy changes.
+**Nearest confusion.** Reported when the design only credibly delivers ATT or
+LATE. The ATE needs a valid counterfactual for *both* the treated and the
+untreated — more demanding than people assume.
+**One line.** *Effect of a universal basic income on labour supply for the whole
+adult population.*
+
+## ATT — Average Treatment Effect on the Treated
+
+**Plain language.** The average effect among those who *actually got* treatment.
+**Notation.** $\text{ATT} = E[\delta_i \mid D_i = 1]$.
+**Right target when.** Evaluating an existing, targeted program for its current
+recipients; retrospective "is this working?" questions.
+**Nearest confusion.** Dressed up as ATE. Most quasi-experimental designs (DiD,
+matching on the treated, synthetic control) deliver ATT *because they only build
+a counterfactual for the treated*. That is a feature — but it is not the ATE.
+**One line.** *Effect of a place-based subsidy on the firms that received it.*
+
+## ATU — Average Treatment Effect on the Untreated
+
+**Plain language.** The average effect for those who did *not* get treatment —
+the effect they *would* experience if newly treated. **Notation.**
+$\text{ATU} = E[\delta_i \mid D_i = 0]$.
+**Right target when.** Expansion decisions: "if we extended the program to the
+currently-untreated, what would happen?"
+**Nearest confusion.** Assumed equal to ATT. Hardest parameter[^param] to identify
+credibly, because almost every design builds counterfactuals relative to the
+treated.
+
+[^param]: *Parameter* is the statistician's word for a fixed, unknown feature of
+the population — used throughout this chapter interchangeably with *estimand*: the
+target you want to learn (the ATE, ATT, …), as distinct from the *estimator* that
+guesses it and the *estimate* it produces (@sec-recap). "These parameters" later
+on just means "these candidate estimands." Under selection on gains, ATU < ATT, so expansion disappoints relative
+to the program's track record.
+**How it's estimated.** Rarely as a direct target. Usually by modelling the
+*treated* outcome surface and predicting it for the untreated (regression
+imputation / g-computation), as the residual once ATE and ATT are known
+($\text{ATE} = \pi\,\text{ATT} + (1-\pi)\,\text{ATU}$, with $\pi$ the treated
+share), or by reverse matching/IPW. Each route extrapolates the treated outcome
+model onto people who *chose not* to be treated — precisely where selection on
+gains bites — which is why the ATU is the flimsiest member of the family.
+**One line.** *What training would do for workers who currently decline it.*
+
+## LATE — Local Average Treatment Effect
+
+**Plain language.** The average effect among **compliers** — units whose
+treatment status flips *because of* the instrument or assignment nudge.
+**Notation.** $\text{LATE} = E[\delta_i \mid \text{complier}]$ (Imbens & Angrist
+1994; Angrist, Imbens & Rubin 1996). In the experimental-noncompliance literature
+the identical object is the **CACE** (complier average causal effect): same
+estimand, different name — LATE emphasises the instrument, CACE the noncompliance.
+**Right target when.** The contemplated policy operates at *the same margin* as
+the instrument — i.e., it would move the same people.
+**Nearest confusion.** Read as ATE. Three traps: (i) compliers are
+**unidentified** — you cannot list them; (ii) **different instruments define
+different complier groups**, hence different LATEs for the *same* treatment;
+(iii) it says nothing about always-takers or never-takers.
+**One line.** *Effect of military service on later earnings, for men who served
+only because the draft lottery compelled them (Angrist).*
+
+## CATE — Conditional Average Treatment Effect
+
+**Plain language.** The ATE *within a subgroup* defined by covariates.
+**Notation.** $\text{CATE}(x) = E[\delta_i \mid X_i = x]$.
+**Right target when.** Heterogeneity and targeting questions; "who benefits
+most?"; assessing whether an effect transports to *your* subpopulation.
+**Nearest confusion.** Treated as free. Identification must hold *within* the
+cell, cells are smaller (less power), and slicing many subgroups invites
+false positives. A CATE averaged over the population's $X$ distribution is the
+ATE — over a *different* distribution it is a different number (the seed of
+transportability).
+**One line.** *Effect of a GOTV mailer among first-time registrants specifically.*
+
+## ITT — Intent-to-Treat
+
+**Plain language.** The effect of *being assigned/offered* treatment, regardless
+of take-up. **Notation.** $\text{ITT} = E[Y_i \mid Z_i = 1] - E[Y_i \mid Z_i = 0]$
+for assignment $Z$.
+**Right target when.** The policy lever *is* the offer (you can mandate
+availability, not uptake); when you want the real-world effect of a program that
+people can decline.
+**Nearest confusion.** Conflated with the effect of treatment *received*. Under
+imperfect compliance $\text{ITT} = \text{LATE} \times P(\text{complier})$ —
+the ITT is *diluted* by non-take-up. Dividing by the first stage recovers LATE
+(under exclusion + monotonicity).
+**One line.** *Effect of mailing a vaccine voucher on infection rates, whether
+or not recipients redeem it.* (Note: "ITT" is also used loosely for
+*assignment-level* exposure even without a compliance story — see @sec-assign.)
+
+## MTE — Marginal Treatment Effect
+
+**Plain language.** The effect for the unit *just indifferent* between treatment
+and control at a given level of unobserved resistance $u$. **Notation.**
+$\text{MTE}(u) = E[\delta_i \mid U_i = u]$ (Heckman & Vytlacil 2005).
+**Right target when.** You want to build *other* estimands: ATE, ATT, ATU, and
+LATE are all weighted integrals of the MTE curve — they differ only in the
+weights. Also for marginal-expansion policy ("treat a few more people").
+**Nearest confusion.** Treated as exotic. It is actually the unifying object:
+once you see the MTE curve, "which estimand?" becomes "which weights over $u$?"
+**One line.** *How the return to college falls as you move from eager to
+reluctant attendees.*
+
+## Reference table {#sec-taxotable}
+
+| Estimand | Population averaged over | One-line gloss | Most common misuse |
+|---|---|---|---|
+| **ATE** | Everyone | Effect of treating all vs. none | Claimed when only ATT/LATE is identified |
+| **ATT** | The treated | Effect on actual recipients | Sold as ATE / as evidence for expansion |
+| **ATU** | The untreated | Effect if you newly treated them | Assumed equal to ATT |
+| **LATE** (= CACE) | Compliers (instrument-specific) | Effect for those the nudge moved | Read as ATE; ignoring instrument-dependence |
+| **CATE** | A covariate subgroup | Effect within $X=x$ | Underpowered slicing; transport without warrant |
+| **ITT** | The *assigned* | Effect of the offer | Confused with effect of receipt |
+| **MTE** | The marginal unit at $u$ | Effect for the indifferent | Treated as untestably abstract |
+| **QTE** | Everyone, distributionally | Effect at the $\tau$-th outcome quantile | Read as a mean effect; it is a different *aggregation rule* |
+
+: Estimand quick-reference. **CACE** is the noncompliance-literature name for LATE. **QTE** changes the *aggregation* slot, not the population — a reminder that the third LJS part also defines the estimand. ATE, ATT, ATU, and LATE coincide only under strong conditions (@sec-coincide); the sample-vs-population distinction (SATE/PATE) is in @sec-sampling, and which design naturally targets which of these is in @sec-designmap. {.striped .hover}
+
+```{=html}
+<div class="est-quiz" id="q-taxo">
+<p class="est-stem"><strong>Checkpoint.</strong> A judge-leniency IV study finds
+that pre-trial detention reduces later employment. For which population is this
+effect identified?</p>
+<label class="est-opt"><input type="radio" name="q-taxo" data-correct="false" data-why="The IV says nothing about defendants who would be detained (or released) regardless of which judge they draw — those are always-takers/never-takers, outside the complier set."> All defendants (ATE)</label>
+<label class="est-opt"><input type="radio" name="q-taxo" data-correct="false" data-why="ATT would be the effect on all who were detained, including those any judge would detain. IV only speaks to the margin the instrument moves."> Everyone who was detained (ATT)</label>
+<label class="est-opt"><input type="radio" name="q-taxo" data-correct="true" data-why="Judge leniency is an instrument; it identifies a LATE for compliers — marginal defendants whose detention depends on which judge they happened to draw. A stricter or more lenient instrument would define a different complier set and a different LATE."> Marginal defendants whose detention depends on the judge (LATE)</label>
+<label class="est-opt"><input type="radio" name="q-taxo" data-correct="false" data-why="MTE is the effect at a single point of indifference; the IV delivers an average over the complier interval, i.e., a LATE, not a single MTE point."> The single indifferent defendant (MTE)</label>
+<button class="est-btn" onclick="estCheck('q-taxo')">Check answer</button>
+<div class="est-feedback"></div>
+</div>
+```
+
+## From the estimand you have to the one you want {#sec-extrapolate}
+
+A design hands you one parameter. Claiming a *different* one is always an
+extrapolation, licensed only by an assumption you should state out loud. The
+identity $\text{ATE} = \pi\,\text{ATT} + (1-\pi)\,\text{ATU}$ (with $\pi$ the
+treated share) sits behind most of these moves.
+
+| Have → Want | Assumption that licenses it | "What you'd have to believe" |
+|---|---|---|
+| **ATT → ATE** | ATU recoverable: homogeneity, or selection-on-observables for the *untreated* counterfactual so you can reweight | "The untreated would respond like comparable treated units — no selection on gains beyond what my covariates capture." |
+| **ATT → ATU** | Same as above (ATU is the residual once ATE and ATT are pinned); at the limit, $\text{ATU} = \text{ATT}$ | "The people who declined treatment would gain what the takers gained." (Flatly false under Roy sorting.) |
+| **LATE → ATE** | Homogeneous effects, *or* MTE extrapolation across the propensity range, *or* multiple instruments tracing the MTE curve, *or* shape restrictions giving bounds | "Compliers are not special — always-takers and never-takers have the same effect," or "I can extrapolate the MTE curve off the complier margin." |
+| **LATE → ATT / ATU** | Effect equality across compliers and always-takers (for ATT) or never-takers (for ATU) | "The marginal units the instrument moved have the same effect as the inframarginal ones it never touched." |
+| **ITT → LATE** | Exclusion + monotonicity (+ relevance); then $\text{LATE} = \text{ITT} / P(\text{complier})$ | "Assignment affects outcomes *only* through take-up, and nobody defies — so I may divide by the first stage." |
+
+: Moving between estimands always costs an assumption about units the design never identified. {.striped}
+
+The pattern is one idea: every upward move buys a broader population with an
+assumption about the units the design *never* saw — the untreated, the
+non-compliers, the inframarginal. Name which units you are extrapolating onto, and
+the assumption that they resemble the ones you observed. This is also a
+ready-made critique move (@sec-critique): when a paper's conclusion needs a wider
+estimand than its design delivers, the question is simply *which row of this table
+are they implicitly standing on, and is the belief in the last column credible?*
+
+# Designs and the estimands they point at {#sec-designmap}
+
+Each design has a *natural* estimand — the parameter it targets when its
+assumptions hold. This section is about that logic **only**. It says nothing
+about whether the assumptions are credible (parallel trends, exclusion,
+continuity are someone else's section); the point is to read the target off the
+design *before* arguing about validity.
+
+One cut organises the rest. Designs differ in *where their identifying power comes
+from*, and that source largely dictates how much freedom you have over the
+estimand:
+
+- **Experimental** (the RCT): the researcher randomises treatment, so a valid
+  counterfactual exists by construction and you can target the ATE directly.
+- **Observational / selection-on-observables** (matching, regression, IPW): there
+  is no special source of exogenous variation; identification rests on the
+  assumption that you have measured and conditioned on every confounder. Because
+  conditioning *(if that assumption holds)* reconstructs the joint distribution of
+  treated and untreated alike, **the estimand is a choice** — ATT, ATE, or ATU,
+  set by how you weight. What you cannot choose is whether unconfoundedness holds.
+  You would pick the ATT over the ATE when the question is about the people who
+  actually received treatment (evaluating an existing programme, not a hypothetical
+  universal rollout) — and because it is often the more *credible* choice, since
+  the ATT needs only controls comparable to the treated, whereas the ATE demands
+  overlap across the *entire* covariate space and so extrapolates the treated
+  experience onto units unlike any treated unit.
+- **Quasi-experimental** (DiD, IV, RDD): you do not assume confounding away; you
+  exploit a slice of *as-if-random* variation in the world — a policy
+  discontinuity, an instrument, a sharp timing. But that variation is *local*, so
+  **the estimand is handed to you** and is usually local too: the complier LATE,
+  the effect at the cutoff, the ATT among the treated-and-post. The very feature
+  that buys credibility — a narrow window of exogenous variation — also narrows
+  *whose* effect you identify.
+
+Quasi-experimental designs are "observational" in the broad sense (no
+researcher-controlled randomisation), and the line between the two families is
+genuinely fuzzy; what separates them for our purposes is whether identification
+leans on *conditioning* or on a *source of as-if-random variation*. The estimand
+lesson: in observational designs you pick the target and then defend an assumption
+about confounding; in quasi-experimental designs the design picks the target for
+you, and your job is to notice *which* local population that is (the
+identification-first route of @sec-derive).
+
+| Family | Design | Natural estimand | Population it averages over |
+|---|---|---|---|
+| Experimental | Simple RCT | ATE (for the sampled population) | Everyone in the sample/frame |
+| Experimental | RCT, noncompliance | **ITT** (offer) *and* **LATE/CACE** (receipt) | Assigned (ITT) vs. compliers (LATE) |
+| Observational | Selection-on-observables (matching / regression / IPW) | ATT, ATE, or ATU — *whichever the weights target* | The treated, everyone, or the untreated, per estimator |
+| Quasi-experimental | Canonical 2×2 DiD | ATT | The treated group |
+| Quasi-experimental | IV | LATE | Compliers (instrument-specific) |
+| Quasi-experimental | RDD (sharp) | Effect at the cutoff (a boundary CATE) | Units at the threshold |
+| Quasi-experimental | RDD (fuzzy) | LATE at the cutoff | Compliers at the threshold |
+
+: Design → natural estimand, grouped by where identification comes from. Estimand logic only — the credibility of each design's assumptions is a separate question. {.striped}
+
+- **Simple RCT.** Randomisation gives a valid counterfactual for both arms, so
+  the natural target is the ATE — but *for the sampled population* (@sec-sampling),
+  not automatically a national one.
+- **RCT with noncompliance.** Two legitimate targets, not one diluted one. ITT is
+  the effect of the *offer*; LATE/CACE the effect of *receipt* among compliers;
+  $\text{ITT} = \text{LATE} \times P(\text{complier})$.
+- **Selection-on-observables.** The design itself does not fix the estimand —
+  *the estimator's weights do*. Matching on the treated or Hájek IPW → ATT; full
+  Horvitz–Thompson reweighting → ATE; reverse-matching the untreated → ATU. This
+  is the one row where "which estimand?" is a choice you make, not a fact about
+  the design.
+- **2×2 DiD.** Builds a counterfactual *for the treated* from control trends → the
+  ATT, and only the ATT.
+- **IV.** Identifies the complier effect; a different instrument is a different
+  complier set and a different LATE (@sec-fieldguide).
+- **RDD.** A discontinuity in assignment identifies the effect *at the cutoff* — a
+  local effect for threshold units, by construction not a population average.[^rdlabel]
+  Fuzzy RD adds an IV step, localising further to compliers at the cutoff.
+
+[^rdlabel]: Sources differ on the label: some call the sharp-RD target "the LATE
+at the threshold," others "the ATE at the cutoff." Both mean the boundary effect
+for units at the cutoff. I use *boundary CATE* to avoid colliding with this
+chapter's LATE entry, which reserves "LATE" for the complier effect.
+
+## TWFE and staggered adoption: a panel-data problem {#sec-twfe}
+
+This is a *longitudinal-data* issue, separate from the cross-sectional
+OLS-weighting point in @sec-varweight. With a single treatment time, two-way
+fixed effects (TWFE) recovers the ATT cleanly. Under **staggered adoption +
+heterogeneous effects**, it does not.
+
+Goodman-Bacon (2021) shows TWFE is a weighted average of all the underlying 2×2
+DiDs — including "forbidden" comparisons that use **already-treated** units as
+controls for later-treated ones. Under heterogeneity the weights on some of these
+comparisons can be **negative**, so the TWFE coefficient need not equal the ATT
+and can even be opposite in sign to every unit-level effect. The fix is an
+*estimand* fix, not a standard-error fix: heterogeneity-robust estimators —
+Callaway–Sant'Anna, imputation (Borusyak et al.), Sun–Abraham — recover
+interpretable **group-time ATTs** that you then aggregate with transparent,
+non-negative weights.
+
+The framing to keep: TWFE's problem is *which weighted average of group-time ATTs
+the coefficient represents*, not whether the design is valid. State your target
+as "the average of group-time ATTs, equally weighted across cohorts" (or whatever
+aggregation you choose) and report the estimator that delivers it.
+
+```{=html}
+<div class="est-quiz" id="q-twfe">
+<p class="est-stem"><strong>Checkpoint.</strong> A reviewer writes: "Your TWFE
+event-study with staggered adoption may not estimate the ATT you claim." What is
+the most precise restatement of the concern?</p>
+<label class="est-opt"><input type="radio" name="q-twfe" data-correct="false" data-why="Clustering fixes standard errors, not the estimand. The concern is about which weighted average of effects the point estimate represents, not its variance."> The standard errors are wrong; cluster them</label>
+<label class="est-opt"><input type="radio" name="q-twfe" data-correct="true" data-why="Exactly. Under staggered timing and heterogeneous effects, TWFE is a weighted average of 2×2 DiDs including forbidden already-treated-as-control comparisons, with possibly negative weights — so it can diverge from (even flip the sign of) the ATT. The fix is a heterogeneity-robust estimator (Callaway–Sant'Anna, imputation), not a different SE."> Under heterogeneity + staggered timing, TWFE is a weighted average with possibly negative weights, so it need not equal the ATT</label>
+<label class="est-opt"><input type="radio" name="q-twfe" data-correct="false" data-why="Parallel trends is necessary but is a separate issue. Even if parallel trends holds perfectly, TWFE's weighting problem under heterogeneity remains."> Parallel trends fails, so the design is invalid</label>
+<label class="est-opt"><input type="radio" name="q-twfe" data-correct="false" data-why="More controls don't address the variance-weighting / negative-weights problem, which is structural to TWFE under staggered timing."> You need more covariates</label>
+<button class="est-btn" onclick="estCheck('q-twfe')">Check answer</button>
+<div class="est-feedback"></div>
+</div>
+```
+
+# Where intuition usually breaks {#sec-breaks}
+
+This is the section that matters. Definitions are easy; the failures below are
+where careful researchers and sloppy ones part ways. The recurring move to watch
+for: **the estimand quietly changes while the prose stays the same.** The failures
+sort into three clusters: **(A)** the parameters genuinely diverge, so "effect for
+whom?" has different answers; **(B)** the target population moves between design
+and conclusion without anyone noticing; **(C)** the estimator quietly imposes a
+population of its own.
+
+## A — Effect for whom: why the parameters diverge {#sec-clusterA}
+
+*The parameters diverge because treatment is not allocated at random with respect
+to its own effect — so ATE, ATT, ATU and LATE answer different "for whom"
+questions, and equality among them is a claim requiring evidence, not a default.*
+
+### Coincidence only under strong conditions {#sec-coincide}
+
+They are all equal **iff treatment effects are homogeneous** (constant
+$\delta_i$) — or, more weakly, iff effect heterogeneity is uncorrelated with
+treatment assignment and with compliance. In social science neither holds by
+default. As the reference materials put it bluntly: *"everything affects everyone
+differently."* So treat equality of these parameters as a claim requiring
+evidence, never a convenience.
+
+The selection-bias decomposition makes the wedge concrete. The naïve
+difference in observed means is
+$$
+\underbrace{E[Y\mid D=1] - E[Y\mid D=0]}_{\text{what OLS-of-Y-on-D gives}}
+= \text{ATE} + \underbrace{\big(E[Y(0)\mid D=1]-E[Y(0)\mid D=0]\big)}_{\text{selection bias}}
++ \underbrace{(1-\pi)(\text{ATT}-\text{ATU})}_{\text{heterogeneity term}} .
+$$
+The third term is non-zero *precisely when* ATT $\neq$ ATU — i.e., whenever the
+people who got treated have systematically different effects from those who did
+not. That is the norm, not the exception.
+
+::: {.callout-warning appearance="simple"}
+## Intuition trap: "homogeneity is the conservative assumption"
+It is not conservative — it is a strong, usually unexamined modelling choice.
+Assuming $\delta_i$ constant makes all the estimands collapse into one, which
+*hides* the very question ("effect for whom?") that policy turns on. Conservative
+would be to *report which population* your number is about.
+:::
+
+### Selection on gains and on costs (and the perfect doctor)
+
+**Selection on gains (the Roy model).** People who expect to benefit most are
+most likely to take treatment. Then $\text{ATT} > \text{ATE} > \text{ATU}$. The
+program's track record (ATT) flatters what expansion (ATU) would deliver.
+**Selection on costs.** Take-up is driven by who faces the lowest cost/barrier,
+not who benefits most. If low-cost happens to mean low-benefit (e.g., proximity
+instruments for schooling pull in students near the margin), the identified
+effect can sit *below* the ATE. The lesson is not a fixed sign — it is that *the
+direction of the wedge is a substantive question about who selects in and why.*
+
+::: {.contrast}
+**Contrast 2 — same estimand, different estimator.** You want the **ATT** of a
+wage subsidy on recipient firms. You could get it by (a) difference-in-differences
+against never-subsidised firms, or (b) matching subsidised firms to similar
+unsubsidised ones. *Same target population, same contrast.* They differ only in
+the assumption that licenses them — parallel trends (a) vs. unconfoundedness on
+the matched covariates (b). If they disagree, at least one assumption is wrong;
+they are not "two estimands." Contrast this with the next box, where the
+*number moves because the target moved*.
+:::
+
+**Policy targeting — the perfect doctor.** When a planner allocates treatment to
+those expected to benefit most, $\text{ATT} \gg \text{ATE}$, and ATU can be ~0 or
+negative. Cunningham's *perfect doctor* assigns surgery vs. chemo optimally per
+patient: the treatment genuinely helps (ATT $\approx$ +4.4 years) yet a naïve
+comparison shows it *harming* people (SDO $\approx$ −0.4 years), because the
+treated were the sickest. Optimal targeting maximises the gap between treated and
+control counterfactuals — the cleaner the targeting, the more misleading the raw
+comparison, and the less the program's record tells you about expanding it.
+
+**Seeing the wedge in a simulation.** A binary treatment with **genuinely
+heterogeneous effects** and **selection on gains**. ATE, ATT, ATU, and the naïve
+difference in means all land on different numbers — none is "wrong," they are
+*different estimands*.
+
+```{r}
+#| label: demo-ate-att
+#| message: false
+set.seed(2026)
+n  <- 50000
+u  <- rnorm(n)                       # latent "gain type"
+y0 <- 0.5 * u + rnorm(n)
+tau_i <- 0.2 + 0.8 * pnorm(u)        # individual effect: bigger for high-u units
+y1 <- y0 + tau_i
+
+# Selection on gains: high-gain units more likely to be treated.
+p  <- plogis(1.2 * u)
+d  <- rbinom(n, 1, p)
+y  <- ifelse(d == 1, y1, y0)
+
+ATE <- mean(tau_i)
+ATT <- mean(tau_i[d == 1])
+ATU <- mean(tau_i[d == 0])
+naive <- mean(y[d == 1]) - mean(y[d == 0])
+
+round(c(ATE = ATE, ATT = ATT, ATU = ATU,
+        `naive diff` = naive), 3)
+```
+
+The naïve difference overshoots even the ATT, because high-gain units also had
+higher $Y(0)$ (selection bias). ATT > ATE > ATU is the Roy-model signature. Flip
+the effect to homogeneous (`tau_i <- rep(0.6, n)`) *and* switch selection off
+(`p <- rep(0.5, n)`), and the four numbers collapse onto each other — that
+knife-edge is the only place the taxonomy stops mattering. The wedge here is
+driven by *selection on gains*, not by OLS weighting; that distinct channel is
+@sec-varweight.
+
+## B — The population moves without you noticing {#sec-clusterB}
+
+*The target population can shift between design and conclusion through three quiet
+channels — defining treatment at the assignment vs. exposure level, restricting or
+reweighting the sample, and generalising to a population you did not study — none
+of which is a bias to be corrected, and all of which require a substantive argument.*
+
+### Assignment level vs. uptake/exposure level {#sec-assign}
+
+A pervasive, under-discussed shift: *at what level is treatment defined?*
+
+- **Assignment / offer:** ITT-type estimand. The effect of *being assigned* to
+  (or living in) a treated condition.
+- **Uptake / experienced exposure:** the effect of actually *receiving* the dose.
+
+These differ whenever take-up or exposure is partial. The gap is usually framed
+as compliance, but it shows up far more broadly — in community-level treatments
+where some residents are barely touched, in encouragement designs, in
+geographic "treatments" where exposure varies within the treated unit. Scaling
+ITT up to a per-treated effect (dividing by a first stage) is only the *right*
+estimand if the policy you have in mind achieves full uptake.
+
+::: {.contrast}
+**Contrast 3 — assignment vs. exposure (a community treatment).** A flood hits
+some 1-km grid cells. Define treatment two ways:
+
+- *Community assignment (ITT-style):* you live in a flooded cell. Averaged over
+  all residents of flooded cells — including those whose own home stayed dry.
+  This is a real, policy-relevant total community effect.
+- *Direct individual exposure:* your own home was inundated. A within-community
+  dose-response estimand, defined only inside flooded cells.
+
+Same event, two estimands, different populations and different contrasts. The
+community ITT is *not* a diluted version of "the real effect" — it is a
+different, legitimate target (the effect of being in an affected place). Calling
+the community estimate "the effect of being flooded" overstates it; calling the
+individual estimate "the effect of the flood on the community" understates the
+collective channel. (This is the CAD study's primary vs. secondary estimand;
+see @sec-cad.)
+:::
+
+### Any restriction or weight relocalises the estimand {#sec-restrict}
+
+Overlap-trimming is the textbook case, but the general point is broader and
+matters more in political science, where formal common-support trimming is rare
+and usually unremarked. *Any* move that changes which units enter the average —
+trimming for overlap, dropping off-support cells, applying sampling or propensity
+weights, restricting to a subsample "for robustness" — silently moves the target
+population, hence the estimand. "ATT on the supported treated" is a different
+claim from "ATT on the treated," and a weighted estimate targets a different
+population from its unweighted twin (@sec-sampling). The discipline is one
+sentence: whenever you restrict or reweight, say which sub-population the number
+now refers to.
+
+### Transportability vs. internal estimation
+
+Two different failures that get blurred:
+
+- **Internal estimation problem (bias):** your estimate of the chosen estimand,
+  *for your sample's population*, is biased — confounding, bad controls,
+  violated parallel trends.
+- **Transportability problem (target population):** your estimate of the chosen
+  estimand is *fine for the population you studied*, but you are using it to
+  speak about a *different* population where effects may differ.
+
+These call for different responses. Bias is fixed (if at all) by better
+identification. Transportability is a substantive argument about *why effects
+should or should not carry over* — there is no purely statistical fix. Mislabel
+a transportability gap as bias and you will "correct" the wrong thing.
+
+::: {.contrast}
+**Contrast 4 — identified estimand vs. desired estimand.** A draft-lottery IV
+cleanly identifies the **LATE** of military service for lottery compliers. Your
+policy question is the **ATE** for all potential servicemembers (including
+volunteers and those who would never serve). The estimate is *not biased* — it
+is an excellent estimate of the LATE. It is simply not an estimate of the thing
+you want. The fix is not a better instrument for the *same* design; it is either
+a different design, an extrapolation argument (MTE, multiple instruments,
+bounds), or honesty that the question has shifted.
+:::
+
+## C — The estimator imposes its own estimand {#sec-clusterC}
+
+*Even with identification settled, the estimator's weighting can target a
+population nobody chose — so "which estimand?" is partly a question about your
+method, not only your design.*
+
+### OLS with controls and the variance-weighted estimand {#sec-varweight}
+
+A regression of $Y$ on a binary $D$ plus controls does not, in general, return
+"the ATE" under effect heterogeneity. But the size of the problem is bounded, and
+it is worth saying precisely *where it bites* — because OLS-with-controls is the
+workhorse of the discipline and a blanket warning is not useful.
+
+**Where it is (nearly) fine.** When the propensity to be treated is *constant*
+across units — a clean RCT with a single assignment probability, or adjustment
+that is *saturated* (treatment fully interacted with discrete covariate strata) —
+regression adjustment recovers the ATE to first order. In a randomised experiment
+covariates are a precision device, not an identification one; the estimand is
+still the ATE. (Two caveats from the experimental-adjustment literature: additive
+covariate adjustment can induce a minor finite-sample bias under heterogeneity;
+Lin's fully-interacted estimator removes it and cannot hurt asymptotic precision.
+For typical political-science $N$ this is second-order.)
+
+**Where it bites.** Under *selection-on-observables with a non-constant propensity
+score* — the usual observational case — the OLS coefficient on $D$ is a
+**variance-weighted** average of strata-specific effects: strata where treatment
+is most variable ($\hat p(X)\approx 0.5$) dominate, while near-always-treated and
+near-never-treated strata contribute almost nothing. This is *not bias* — the
+estimate is consistent for a weighted average — but the weights are an artefact of
+the treatment-probability distribution, not a population you chose. Interacting
+treatment with covariates restores a target-able estimand; full saturation removes
+the weighting problem at the cost of power.
+
+**The Słoczyński (2022) result, precisely.** Even with a single binary treatment
+and no functional-form subtlety, OLS does not return the ATE under heterogeneity.
+It converges to a convex combination
+$$ \hat\beta_{\text{OLS}} \;\to\; (1-\rho)\,\text{ATT} + \rho\,\text{ATU}, \qquad \rho = \text{treated share}, $$
+weighting ATT by the *untreated* share and ATU by the *treated* share — the
+**opposite** of the ATE weights. So OLS puts *more* weight on the group that is
+the *smaller* share of the sample. With 10% treated, $\hat\beta$ loads roughly 90%
+on the ATT and barely sees the ATU; with a small control group it sits near the
+ATU. The ATE ($\rho\,\text{ATT} + (1-\rho)\,\text{ATU}$) is recovered only at
+$\rho = 0.5$ or under homogeneity.
+
+**How big is the divergence?** Bounded by two things and no more: how far the
+treated share is from one-half, and the gap $\text{ATT}-\text{ATU}$ (the size of
+selection-driven heterogeneity). If either is small, so is the divergence — equal
+shares, or near-homogeneous effects, and OLS $\approx$ ATE. Resist a universal
+number; the wedge is study-specific. Claim "OLS departs from the ATE in proportion
+to treated-share imbalance times effect heterogeneity," not "OLS is typically far
+from the ATE."
+
+::: {.callout-warning appearance="simple"}
+## Verdict you can act on
+Worry when **both** hold: the treated (or control) group is a small share of the
+sample, *and* you have a substantive reason to expect $\text{ATT}\neq\text{ATU}$
+(selection on gains, targeting). Then "the OLS coefficient" is neither ATE, ATT,
+nor ATU, and you should either state which weighted average you report or switch
+to a weighting/saturated estimator that targets a named parameter. Do *not* worry
+much in a balanced experiment, or where effects are plausibly homogeneous in the
+dimension separating treated from control. The staggered-**panel** version of this
+problem (TWFE, negative weights) is separate and more severe — see @sec-twfe.
+:::
+
+# Sampling pins down the population {#sec-sampling}
+
+The LJS anatomy has three slots; sampling decides the **second one** — the target
+population — and it does so whether or not you write it down. Two estimands with
+the same unit-level contrast and the same aggregation rule are *different
+estimands* if they average over different populations (@sec-popmoved). Sampling is
+how that population gets fixed, and it is the slot a survey experiment most often
+leaves implicit.
+
+## SATE and PATE
+
+Hold the experiment fixed and ask: whose average?
+
+- **SATE** — the **sample** average treatment effect,
+  $\text{SATE} = \tfrac1n\sum_{i\in\text{sample}}\delta_i$: the average effect over
+  *the units you actually have*.
+- **PATE** — the **population** average treatment effect, $\text{PATE} = E[\delta_i]$
+  over the target population the sample was meant to represent.
+
+They coincide when the sample is a representative draw — formally, when sampling
+is independent of the treatment effect $\delta_i$. They diverge whenever the units
+you recruited have systematically different effects from those you did not: a
+*sampling* analogue of selection on gains. What closes the gap is exactly one of
+two things: (i) **probability sampling** from the target population (then the SATE
+is an unbiased estimate of the PATE by design); or (ii) a **reweighting argument**
+under an *ignorable-selection* assumption — selection into the sample is
+independent of $\delta_i$ *conditional on observed covariates* $W$, so reweighting
+to the population's $W$-distribution recovers the PATE. Route (ii) is the sampling
+twin of selection-on-observables, and just as untestable.
+
+## Probability samples vs. opt-in panels
+
+This is where most survey-experimental papers quietly overclaim. A clean RCT
+*embedded in a convenience or quota panel* (a YouGov-style quota sample, a student
+pool, MTurk) has impeccable **internal** validity — random assignment identifies
+an ATE *for the people in the panel*. What it does **not** identify, without
+further argument, is a national PATE. The respondent pool is self-selected,
+quota-filled, or platform-specific; its members can differ from the national
+population on precisely the dimensions that moderate the effect.
+
+So the **defensible estimand of a quota/opt-in survey experiment is "the ATE for
+the respondent pool,"** not "the ATE for [country] adults" — unless the authors
+make an explicit reweighting + ignorable-selection argument. Most papers report
+something like *"data are from YouGov, 3,000 quota-sampled respondents,"* present
+weighted estimates, and then discuss them as national effects without ever stating
+the assumption that licenses the jump. The estimand is left implicit — which is
+the recurring theme of this chapter (@sec-extrapolate): there is always a target,
+and silence does not make it the national one.
+
+- **When implicit is fine.** If the effect is plausibly *homogeneous* over the
+  dimensions on which the panel differs from the population — a framing effect with
+  no theoretical reason to vary by the panel's skews — the SATE–PATE gap is small
+  and the elision is defensible.
+- **When it is not.** If the effect is heterogeneous and the panel is skewed on a
+  moderator (MTurk skews young, educated, low-trust; student samples skew on
+  political sophistication), reweighting on demographics does not fix selection on
+  the *moderator* unless that moderator is in $W$. Then the national claim is a
+  transportability overreach (@sec-critique), not a weighting technicality.
+
+## Weights *are* an estimand choice
+
+Sampling weights are not a nuisance correction; **applying them changes the target
+population, hence the estimand.** Unweighted, you estimate the SATE for the
+achieved sample; weighted to population margins, you target the PATE for the
+population those margins describe. Switching weights silently switches the estimand
+— the same move as the restriction/reweighting point in @sec-restrict, in a
+different costume. Report which population the weights define, and note when an
+"unweighted robustness check" is therefore a *different estimand*, not merely a
+less efficient one.
+
+## A secondary, observational example
+
+The point is not specific to surveys. In an administrative-data study — say, the
+effect of a job-centre programme using full municipal registers — the *sampled
+frame is the population*: you observe (near) everyone in the frame, so SATE = PATE
+*for that frame*. The estimand question then collapses onto the frame's definition:
+"all unemployment-insured residents of these three municipalities, 2015–2019" is
+the population, and any claim beyond it (other municipalities, other years) is
+transportability, not sampling. Defining the frame *is* defining the target
+population — the second LJS slot — and a frame restriction (drop non-citizens, drop
+short spells) relocates the estimand exactly as a sample restriction does
+(@sec-restrict).
+
+```{=html}
+<div class="est-quiz" id="q-sampling">
+<p class="est-stem"><strong>Checkpoint.</strong> A survey experiment fielded on a
+3,000-person opt-in quota panel finds a framing effect and concludes "framing
+shifts [country]'s public opinion." The authors apply demographic weights. The
+cleanest statement of the estimand issue is:</p>
+<label class="est-opt"><input type="radio" name="q-sampling" data-correct="false" data-why="Random assignment within the panel gives clean internal validity; the issue is not bias in estimating the panel's effect."> The randomisation is broken, so the estimate is biased</label>
+<label class="est-opt"><input type="radio" name="q-sampling" data-correct="true" data-why="Right. The design identifies the SATE for the panel; the national PATE claim needs probability sampling or an ignorable-selection-given-W argument. Demographic weights only close the gap if selection into the panel is ignorable conditional on those demographics — and effect-moderators not in W (e.g. political attentiveness) break that."> It identifies the effect for the panel (a SATE); the national claim needs probability sampling or ignorable selection given the weighting variables</label>
+<label class="est-opt"><input type="radio" name="q-sampling" data-correct="false" data-why="Demographic weights target population *margins* on the weighting variables; they do not guarantee the PATE unless selection is ignorable given exactly those variables, which is an assumption, not an automatic fix."> Applying demographic weights makes it the national PATE automatically</label>
+<label class="est-opt"><input type="radio" name="q-sampling" data-correct="false" data-why="A bigger panel shrinks the standard error around the SATE; it does nothing about the sample-to-population gap, which is a population question, not a precision one."> A larger panel would fix the problem</label>
+<button class="est-btn" onclick="estCheck('q-sampling')">Check answer</button>
+<div class="est-feedback"></div>
+</div>
+```
+
+# Estimands in the design pipeline {#sec-pipeline}
+
+## MIDA: the estimand is the Inquiry
+
+DeclareDesign (Blair, Coppock, and Humphreys) frames any design as four
+components, **M-I-D-A**:
+
+- **M**odel — your beliefs about how the world works (units, potential outcomes,
+  unobservables).
+- **I**nquiry — *the estimand*: the question asked of the model.
+- **D**ata strategy — sampling and assignment: how data are produced.
+- **A**nswer strategy — the estimator applied to the data.
+
+The estimand is the **I**. Everything else is machinery for answering it. The
+discipline this enforces: you can write down the Inquiry *before* you have data,
+and you can check — in simulation — whether your Answer strategy actually
+recovers it under your Model. A design "works" when the Answer strategy returns
+the Inquiry; "diagnosands" like bias and power are *properties of the M-I-D-A
+quadruple*, not of the estimator alone.
+
+```{mermaid}
+%%| label: fig-pipeline
+%%| fig-cap: "The pipeline. The estimand (Inquiry) is chosen up front; the estimator only recovers it when the identification assumptions linking the empirical to the theoretical estimand hold."
+flowchart LR
+  RQ["Research question<br/><i>(substantive)</i>"] --> EST["<b>Estimand</b><br/>theoretical: unit quantity<br/>+ population + aggregation"]
+  EST --> EMP["Empirical estimand<br/><i>function of observables</i>"]
+  EMP -. "identifying<br/>assumptions" .-> ID{"hold?"}
+  ID -- "yes" --> ER["Estimator<br/><i>(answer strategy)</i>"]
+  ID -- "no" --> BIAS["estimate of<br/>something else"]
+  ER --> E["Estimate<br/><i>(a number + CI)</i>"]
+  classDef target fill:#d4efdf,stroke:#1e8449,color:#145a32;
+  classDef warn fill:#fadbd8,stroke:#c0392b,color:#922b21;
+  class EST target;
+  class BIAS warn;
+```
+
+## How much of an estimand is "precisely stating what you're doing" vs. "the thing you want to know"?
+
+Both, and the tension is the point. A lot of estimand work is *bookkeeping*:
+forcing yourself to write the population and aggregation rule so a reader knows
+exactly what your number refers to. But it is not *only* bookkeeping, because
+the act of writing it down repeatedly reveals that the thing you can identify is
+**not** the thing you wanted — that your design hands you an ATT when your
+conclusion needs an ATU, or a LATE for an odd complier group when you wanted a
+population effect. The estimand is where the **research question** and the
+feasible design are forced to confront each other. Stating it precisely is how
+you *notice* the mismatch — the moment you see that the quantity you can identify
+is not the one your research question asked for — instead of papering over it.
+
+Make the division of labour explicit:
+
+- the **estimand is chosen** — it is a decision about what you want to know;
+- the **estimator is a procedure** — a rule applied to data;
+- the **estimate is the realised output** — one number from that rule;
+- a method delivers a given estimand **only if its assumptions hold**. "DiD
+  estimates the ATT" means "DiD estimates the ATT *if parallel trends holds*." If
+  it doesn't, you have neither the ATT nor any other tidy parameter — just a
+  biased number.
+
+## Declaring an inquiry in code
+
+You can write the estimand as executable code — which forces all three LJS parts
+into the open. The snippet below states the **Inquiry** (the ATE) directly. It
+is shown both as idiomatic DeclareDesign and as a base-R twin, so the document
+renders even where DeclareDesign is unavailable.
+
+```{r}
+#| label: demo-declare-inquiry
+#| message: false
+#| warning: false
+if (requireNamespace("DeclareDesign", quietly = TRUE)) {
+  library(DeclareDesign)
+
+  design <-
+    declare_model(
+      N = 1000,
+      U = rnorm(N),
+      potential_outcomes(Y ~ 0.3 * Z + 0.8 * U * Z + U)
+    ) +
+    # The ESTIMAND, stated explicitly as the average unit-level contrast:
+    declare_inquiry(ATE = mean(Y_Z_1 - Y_Z_0)) +
+    declare_assignment(Z = complete_ra(N, prob = 0.5)) +
+    declare_measurement(Y = reveal_outcomes(Y ~ Z)) +
+    declare_estimator(Y ~ Z, inquiry = "ATE")
+
+  set.seed(2026)
+  draw_estimands(design)          # the inquiry's true value for one draw
+} else {
+  # base-R twin: same population, same inquiry computed by hand
+  set.seed(2026)
+  N <- 1000; U <- rnorm(N)
+  Y0 <- U; Y1 <- 0.3 + 0.8 * U + U
+  data.frame(inquiry = "ATE", estimand = mean(Y1 - Y0))
+}
+```
+
+The value worth internalising: `declare_inquiry()` is the line where you commit
+to *what you want to know*, separately from `declare_estimator()`, where you
+commit to *how you will guess it*. Keeping those two lines distinct in your head
+— even when you are not using DeclareDesign — is most of the skill.
+
+```{=html}
+<div class="est-quiz" id="q-mida">
+<p class="est-stem"><strong>Checkpoint.</strong> In MIDA terms, a colleague says
+"my estimator is unbiased, so my design is fine." What is missing?</p>
+<label class="est-opt"><input type="radio" name="q-mida" data-correct="true" data-why="Unbiasedness is a property of the Answer strategy *relative to a specified Inquiry under a Model*. &quot;Unbiased&quot; is meaningless until you say unbiased *for what estimand*, and a design can be unbiased for an Inquiry nobody wanted."> "Unbiased for *which* Inquiry?" — bias is defined only relative to a stated estimand</label>
+<label class="est-opt"><input type="radio" name="q-mida" data-correct="false" data-why="More data improves precision but does not tell you whether the estimator targets the right estimand; an estimator can be unbiased for the wrong target at any N."> Nothing — more data will settle it</label>
+<label class="est-opt"><input type="radio" name="q-mida" data-correct="false" data-why="A bigger model isn't the issue; the issue is that &quot;unbiased&quot; presupposes a fixed Inquiry that hasn't been named."> A more flexible functional form</label>
+<label class="est-opt"><input type="radio" name="q-mida" data-correct="false" data-why="Clustering addresses variance, not the prior question of which estimand unbiasedness is being claimed against."> Clustered standard errors</label>
+<button class="est-btn" onclick="estCheck('q-mida')">Check answer</button>
+<div class="est-feedback"></div>
+</div>
+```
+
+# How to derive an estimand in practice {#sec-derive}
+
+Three routes. Most good empirical work uses the second; most *published* work
+quietly uses the first; the third is where you end up when feasibility bites.
+Know all three and know their failure modes.
+
+## Route 1 — Canonical-first
+
+**Move.** Reach for an off-the-shelf parameter — ATE, ATT, LATE — and fit your
+study to it.
+**Strength.** Fast, communicable, comparable across literatures. Often genuinely
+correct: if you ran a clean experiment on your population of interest, "the ATE
+for this population" *is* your estimand and there is no need to overthink it.
+**Failure mode.** Lazy category-fitting: you call it "the ATE" because that is
+the box your method came in, not because the whole population is the target.
+The label then does identification work it has not earned.
+**At the workshop table.** *"You've labelled this the ATE — but your design only
+ever builds a counterfactual for the treated. Why is the ATT not the honest
+name here?"*
+
+## Route 2 — Question-first / estimand-first
+
+**Move.** Start from the substantive research question or policy question. Name
+the unit-level quantity, the target population, and the aggregation rule *before*
+choosing a method. Then ask which design could identify *that*.
+**Strength.** Keeps the answer tethered to the question. You discover early
+whether the thing you care about is even identifiable, instead of after the
+fieldwork.
+**Failure mode.** Defining a beautiful estimand no feasible design can recover,
+then either abandoning the project or quietly swapping in whatever you *can*
+estimate while keeping the original prose.
+**At the workshop table.** *"My estimand is the ATU — the effect on
+currently-untreated municipalities, because the policy question is expansion. I
+know my DiD only gives the ATT, so let me be explicit about the extrapolation I
+need."*
+
+## Route 3 — Identification-first / backwards
+
+**Move.** Start from what the design credibly identifies — "I have a clean
+instrument," "I have a discontinuity" — and read off the estimand it implies.
+**Strength.** Honest about feasibility; it is how you avoid claiming things your
+data cannot support. Sometimes the identified estimand turns out to be exactly
+what matters.
+**Failure mode.** Letting the tail wag the dog: the LATE for a weird complier
+group becomes "the effect of X" because that is what the instrument gave you,
+and the introduction is quietly rewritten to pretend that was the question all
+along.
+**At the workshop table.** *"What this RD identifies is the effect at the
+threshold, for units near the cutoff. Before I sell it as the program's effect, is
+the cutoff population the one the decision is actually about?"*
+
+::: {.callout-tip appearance="simple"}
+## A checklist for deriving an estimand from a study idea
+1. **Unit quantity.** Write the single-unit contrast in words, then symbols.
+   ("Person $i$'s turnout if canvassed minus if not.")
+2. **Population.** Name *exactly whom* you average over. Resist "the population"
+   — which one? Everyone, the treated, compliers, a covariate region?
+3. **Aggregation.** Simple mean? Weighted by what? A quantile? A subgroup
+   difference?
+4. **Assignment vs. exposure.** Is the estimand defined at the level of *offer/
+   assignment* or *received dose*? Are they the same here?
+5. **Feasible counterpart.** What empirical estimand (functional of observables)
+   would equal this *if* assumptions held? Name the assumptions.
+6. **Gap check.** Is the feasible estimand the same population/contrast as step
+   2–4? If not, say so now — that gap is your paper's central honesty.
+7. **Policy match (if relevant).** Does the estimand's population coincide with
+   the population the decision is about? If not, you have a transportability
+   argument to make, not just an estimate to report.
+:::
+
+# Writing estimands in papers {#sec-writing}
+
+This section is meant to be lifted directly into a draft.
+
+## The estimand sentence: a recipe
+
+A good estimand sentence names, in one or two sentences, the four things a
+reader needs to reconstruct your target:
+
+> **[unit-level contrast]** for **[target population]**, **[aggregation rule]**,
+> where treatment is defined at the level of **[assignment / exposure]**.
+
+You will not always need the fourth clause, but include it whenever assignment
+and uptake/exposure can differ.
+
+## Templates
+
+- **Clean ATE (experiment on the population of interest):**
+  *"Our estimand is the average effect of [treatment] on [outcome] among
+  [population], defined as the population mean of the individual treatment
+  effect $Y_i(1)-Y_i(0)$."*
+- **ATT (observational/quasi-experimental):**
+  *"We estimate the average treatment effect on the treated: the mean effect of
+  [treatment] on [outcome] for the units that received it, $E[Y_i(1)-Y_i(0)\mid
+  D_i=1]$. We do not identify the effect for never-treated units."*
+- **LATE (IV):**
+  *"Our estimand is the local average treatment effect — the effect of
+  [treatment] for compliers, i.e. units induced into treatment by [instrument].
+  Compliers are not the full population, and a different instrument would define
+  a different complier group."*
+- **ITT / assignment-level:**
+  *"Our estimand is the intent-to-treat effect of [offer/assignment]: the effect
+  of being [assigned/offered], regardless of take-up. This is the policy-relevant
+  quantity because the lever available to policymakers is the offer, not uptake."*
+- **Overlap-localised ATT:**
+  *"After trimming to the region of common covariate support, our estimand is the
+  ATT for the supported sub-population of treated units ($X\%$ of treated units
+  fall off-support and are excluded; we describe them in Table N)."*
+
+## Implicit estimands are still estimands
+
+The templates above make something explicit that papers usually leave unsaid:
+*"we estimate the effect of X on Y"* already commits to an estimand, because every
+estimator presupposes a target. You cannot run a regression that is the answer to
+*no* question. So "stating the estimand" is rarely inventing one from nothing — it
+is **surfacing the one the method and assumptions already imply** (DiD → ATT, IV →
+LATE, OLS-with-controls → a variance-weighted average; see @sec-designmap).
+
+Leaving it implicit is fine when the design admits only one sensible target — a
+clean RCT on the population of interest, where "the effect" can only mean the ATE
+for that population. It becomes a problem exactly when several targets are
+compatible with the same sentence, which is the common case in observational and
+survey work. The test: *could a careful reader write down a different LJS anatomy
+that is equally consistent with your prose?* If yes, the estimand needs saying out
+loud; if no, the implicit version is honest shorthand.
+
+## How many estimands should a paper declare?
+
+Count carefully, because the axes multiply. A design usually pins **one contrast
+structure** (one population × contrast × aggregation), but each *outcome* is a
+separate estimand and each *moderation* analysis adds more — so a typical paper
+carries one primary, several secondary-outcome estimands, and a few
+CATE/interaction estimands. Robustness checks are **not** new estimands — same
+target, different estimator — *unless* they trim or reweight and quietly move the
+population (@sec-restrict), which is a target-shift hiding in a robustness table.
+
+The discipline is ranking, not a magic number:
+
+- **Declare exactly one primary estimand** — one outcome, one contrast, one
+  population, one aggregation — in a single sentence, and power for it.
+- **Label the rest as secondary**, and keep confirmatory separate from
+  exploratory; more estimands means more multiplicity risk, not more findings.
+- **Treat moderation as a distinct, underpowered class.** Pre-specify one or two
+  moderators rather than sweeping; interactions need far larger samples than main
+  effects (Gelman's rule of thumb, ≈16× when the interaction is half the size).
+  Report it as the *gap-between-effects* estimand (@sec-aggregation), flagged
+  exploratory unless pre-registered.
+
+## Good / acceptable / sloppy
+
+::: {.phrasing}
+| Verdict | Phrasing | Why |
+|---|---|---|
+| **Good** | "We estimate the ATT of receiving the subsidy on firm survival, for firms that received it between 2010–2015; we do not estimate the effect for non-recipients." | Names contrast, population, scope; flags what is *not* identified. |
+| **Acceptable** | "We estimate the effect of the subsidy on firm survival using difference-in-differences." | Method implies ATT to an expert reader, but leaves the population implicit. Passable; not best practice. |
+| **Sloppy** | "We estimate the effect of the subsidy on firm survival." | Effect for whom? Contrast against what? Assignment or receipt? The reader cannot reconstruct the target. |
+| **Sloppy & misleading** | "We find the subsidy raises survival, suggesting expanding it would help more firms." | Slides from an ATT to an implicit ATU claim — exactly the population the design cannot speak to. |
+:::
+
+## Worked examples from real traditions
+
+**Coppock, *Persuasion in Parallel* — clarity as a model.** Coppock's estimand
+is unusually well-specified: the *per-message* treatment effect on attitudes,
+estimated across many parallel experiments, with explicit attention to whether
+effects are homogeneous *across subgroups* (do liberals and conservatives move
+in parallel?). The contribution is partly substantive and partly *estimand
+hygiene*: by stating the contrast and the populations (subgroups) precisely, the
+"parallel" claim becomes a testable statement about CATEs being equal across
+groups, not a vibe. Worth emulating: he says what the effect is *for whom* and
+then asks whether it is the *same* for whom-else.
+
+**Angrist & Imbens-style IV-LATE — honesty about the complier population.** In
+Angrist's draft-lottery work and the Imbens–Angrist (1994) framework, the
+estimand is explicitly the LATE: the return to military service *for men whose
+service was induced by the lottery*. The papers are careful that this is **not**
+the effect for volunteers or for those who would never serve. The template to
+steal: state the instrument, state that the estimand is the complier effect,
+and state that the complier population is instrument-specific and not
+enumerable.
+
+**An LJS-style anatomy — write the three parts down.** For a study of the effect
+of a cash transfer on school enrolment: *unit quantity* = child $i$'s enrolment
+if the household receives the transfer minus if not; *target population* =
+children in eligible poor households in the study districts; *aggregation* =
+simple mean (optionally re-weighted to the national eligible population, which
+would be a *different, transported* estimand). Spelling these out makes the
+national-vs-local choice a visible decision rather than an accident of wording.
+
+::: {.contrast}
+**Contrast 5 — same estimate label, different target population.** Two RD studies
+of a means-tested scholarship both report "the effect of the scholarship on
+graduation." Study A's cutoff sits at the 20th income percentile; Study B's at
+the 60th. Both are valid RDs. Both identify an effect *at their own threshold* —
+two different CATEs for two different sub-populations. Reported under the same
+label "the effect," they look like a replication (or a contradiction); read as
+estimands, they are simply *different local effects* and may both be right. "Same
+label, different population" is one of the most common sources of fake
+disagreement in a literature.
+:::
+
+# How to critique other researchers' estimands {#sec-critique}
+
+A reviewer's and seminar-goer's toolkit. The goal is to diagnose *which kind* of
+problem you are looking at, because the kinds call for different responses and
+different language.
+
+## Questions to ask of any empirical paper
+
+1. **Can I state the estimand in LJS terms from what's written?** If not, the
+   first problem is *specification*, before anything else.
+2. **Whose effect is this?** Treated, untreated, compliers, a covariate region,
+   the assigned?
+3. **Does the method's natural estimand match the stated one?** (DiD→ATT,
+   IV→LATE, OLS/TWFE→variance-weighted average.)
+4. **Does the population stay fixed from design to conclusion?** Watch the
+   introduction and the policy paragraph especially.
+5. **Assignment or exposure?** Is the headline the effect of the *offer* or of
+   *receipt*, and is the prose consistent?
+6. **Did overlap-trimming or sample restrictions move the population?**
+7. **Is a within-study estimate being transported to a different population?**
+
+## The five diagnoses
+
+Name the failure precisely — it changes what you ask the author to do.
+
+| Diagnosis | Tell-tale sign | What you ask for |
+|---|---|---|
+| **Unclear estimand** | You cannot reconstruct population/contrast from the text | "Please state the estimand: effect for whom, contrast against what." |
+| **Wrong estimand** | The stated target doesn't answer the stated question | "The question is about expansion (ATU), but you identify the ATT." |
+| **Shifted target population** | Population changes between design and conclusion | "The design is on compliers; the conclusion is about everyone." |
+| **Estimator/estimand mismatch** | Method's natural estimand ≠ claimed estimand | "TWFE under staggered timing isn't the ATT you claim." |
+| **Transportability overreach** | Clean internal estimate, wrong population for the claim | "This is well-identified *for site A*; the policy claim is about site B." |
+
+## Red flags and category errors
+
+- **"The effect of X"** with no population named — the default sloppiness.
+- **ATT evidence, ATE/ATU rhetoric** — "the program works, so let's scale it";
+  make them name the extrapolation assumption it rests on (@sec-extrapolate).
+- **"We estimate the ATE using OLS with controls"** under obvious heterogeneity —
+  almost certainly a variance-weighted average, not the ATE (@sec-varweight).
+- **A single LATE doing population-level work**, with no acknowledgement that the
+  complier group is instrument-specific.
+- **Standard-error talk used to answer estimand questions** — precision is not
+  relevance; an exquisitely tight CI around the wrong estimand is still the wrong
+  estimand.
+- **"Robustness" trimming** that quietly localises the estimand without saying so.
+
+::: {.callout-tip appearance="simple"}
+## Workshop / referee language you can reuse
+- *"I think the design identifies X, but the paper is written as if it identifies Y."*
+- *"This reads as an ATT claim with ATE rhetoric — can you restrict the policy implication to the treated?"*
+- *"Is the problem here bias in estimating your chosen estimand, or that the chosen estimand is not the one your conclusion is about?"* (Internal vs. transportability — force the distinction.)
+- *"Which population is doing the averaging in your main number?"*
+- *"Your empirical estimand is clear; I'm unsure what theoretical estimand it corresponds to."*
+- *"A different instrument would give a different complier group — how special is this LATE?"*
+:::
+
+```{=html}
+<div class="est-quiz" id="q-diagnose">
+<p class="est-stem"><strong>Checkpoint.</strong> A paper runs a clean RCT in one
+NGO's clinics, estimates the ATE on that patient population, and concludes "this
+intervention should be adopted nationally." The most precise critique is:</p>
+<label class="est-opt"><input type="radio" name="q-diagnose" data-correct="false" data-why="If it's a clean RCT, the within-study estimate of the ATE is likely unbiased. The problem is not internal bias."> The estimate is biased by confounding</label>
+<label class="est-opt"><input type="radio" name="q-diagnose" data-correct="false" data-why="Estimator/estimand mismatch would mean the method doesn't target the claimed parameter. An RCT does target the ATE for its sample. That's not the issue."> The estimator targets the wrong parameter (mismatch)</label>
+<label class="est-opt"><input type="radio" name="q-diagnose" data-correct="true" data-why="Right. The estimand is well-identified *for the NGO's patient population*; the national claim asserts it transports to a different population where effects may differ. This is a transportability/target-population problem, requiring a substantive argument, not a statistical correction."> Transportability overreach: well-identified for the study population, extrapolated to a different one</label>
+<label class="est-opt"><input type="radio" name="q-diagnose" data-correct="false" data-why="The estimand *is* stated (ATE for the clinic population). The problem isn't that it's unstated — it's that the conclusion silently swaps the population."> The estimand is unclear / unstated</label>
+<button class="est-btn" onclick="estCheck('q-diagnose')">Check answer</button>
+<div class="est-feedback"></div>
+</div>
+```
+
+# Running example: the CAD coastal-flooding study {#sec-cad}
+
+This section applies the chapter to a specific study — a post-event,
+cross-sectional, quasi-experimental design measuring the effect of community
+flood exposure on political attitudes in coastal Denmark. External readers can
+skip it.
+
+## Research question and primary estimand
+
+**Research question.** *Does living in a community that floods change residents'
+political attitudes — for example, their support for climate-adaptation policy,
+trust in government, or risk perceptions?* As @sec-rq insists, that sentence is
+not yet an estimand: it fixes neither *whose* attitudes nor the contrast against
+which "change" is measured. Forcing it to be precise yields the target below.
+
+The **community-level ITT effect**: the average effect of *living in a 1×1 km
+grid cell that flooded* on individual political attitudes, in the population of
+**adult permanent residents of coastal flood-risk cells**. In LJS terms:
+
+- **Unit quantity:** resident $i$'s attitude if their cell flooded minus if it
+  did not.
+- **Target population:** adult permanent residents of coastal flood-risk
+  communities (cells that contain at least one resident inside an official SDFI
+  flood-risk polygon).
+- **Aggregation:** a population mean (with design weights for descriptive
+  quantities; the causal contrast is the cell-level treatment coefficient).
+
+Run through the estimand-sentence recipe of @sec-writing, that becomes one
+declarative line:
+
+> *Our estimand is the average effect of one's 1×1 km community of permanent
+> residence flooding versus not flooding, on political attitudes, for adult
+> permanent residents of coastal flood-risk cells, expressed as a population mean
+> — where treatment is defined at the level of community **assignment** (living in
+> a flooded cell), not individual flood exposure.*
+
+"ITT" here is meant in the **assignment** sense (@sec-assign) — assignment to a
+flooded *community* — **not** the compliance ITT of an experiment with
+non-compliers. The docs are explicit about this distinction, which is exactly
+the kind of clarification this chapter argues for.
+
+## What is the treatment assignment level?
+
+The **cell** (1×1 km kvadratnet). Treatment is `Flooded_j` at the cell level;
+SEs cluster at the cell; the binding constraint on power is $J_T$, the number of
+flooded *cells*, not the number of respondents per cell. This is a community
+treatment, so the assignment-vs-exposure distinction is live and deliberate: a
+resident of a flooded cell whose own home stayed dry is still *treated* under
+the primary estimand.
+
+## What is the estimand under heterogeneity? (a candid wrinkle)
+
+The estimation doc is admirably honest: with effect heterogeneity, OLS with
+segment fixed effects returns a **variance-weighted ITT** (@sec-varweight), not
+necessarily the ATT for the flooded population. They therefore *label* $\tau$ as
+a variance-weighted ITT and report a design/IPW-weighted ATT-on-the-flooded as a
+robustness check. This is the @sec-varweight problem named and managed rather
+than hidden — a model of good practice.
+
+## Why permanent residents but not summer houses?
+
+The target population is **permanent residents**, a substantive choice, not just
+a data limitation. The community-exposure *mechanism*
+requires day-to-day embedding in the affected place: local services, neighbours,
+visible disruption, recovery politics, municipal response. A summer-house owner
+registered elsewhere experiences a *different exposure channel* — property
+damage and financial loss — which is a different unit-level quantity over a
+different population. (There is also an operational reason: CPR samples people at
+their permanent address, so summer-house-only addresses are not sampleable. But
+the docs lead with the *estimand* rationale, correctly.)
+
+## "Estimate on summer houses, claim about year-round homes" — a transportability trap (hypothetical)
+
+The study *excludes* summer-house owners from the estimand, so it does **not**
+make this error — but the hypothetical is the cleanest illustration of
+@sec-breaks. Suppose you *did* estimate effects among flooded summer-house owners
+(property-damage channel) and then spoke about *permanent residents* of flooded
+communities. That is **not bias** in estimating the original estimand — it is a
+**target-population / transportability problem**: a clean effect for population A
+(second-home owners, property channel) used to claim about population B
+(year-round residents, community channel) where the mechanism and the effect may
+differ. The fix is not a better estimator; it is either restricting the claim or
+arguing substantively that the channels coincide (they plausibly do not).
+
+Relatedly, the docs treat **control contamination** — permanent-resident
+controls who own a *flooded* summer house elsewhere — as a measured robustness
+issue, *not* an automatic attenuation. That is the right call: the bias sign is
+only "conservative" under a same-sign assumption about second-home exposure,
+which is itself a substantive claim to be checked, not assumed.
+
+## Frames A vs. C vs. D — when the control frame changes the estimand
+
+This is @sec-popmoved in the wild. The frames differ in *which residents count*
+on each side — whether you keep the whole 1×1 km cell or crop it down to the
+in-polygon (mapped-risk) slice — and that cropping choice moves the estimand:
+
+| Frame | Treated cells | Control cells | Estimand it targets | Why this status |
+|---|---|---|---|---|
+| **C** (primary) | whole cell | whole cell | the **community** effect — exposed vs. unexposed community | crops neither side, so the same covariate "lens" applies to both at full sample size — matches the primary community estimand |
+| **A** (sensitivity) | whole cell | in-polygon slice | *asymmetric*: full-community treated vs. mapped-risk controls; leans toward individual mapped-risk exposure | crops controls only; the lens mismatch leaves A's controls systematically lower-lying and wetter than treated, so it is kept only as an exposure-cleanliness check |
+| **D** (rejected) | in-polygon slice | in-polygon slice | a clean **individual** mapped-risk estimand — a *different* target from C | crops both sides; restores a symmetric lens but switches the target to an individual-level estimand and deletes 18–60% of treated clusters — the docs instead fix the lens with C (un-crop controls), not by cropping treated |
+
+: What each frame crops, the estimand it implies, and why it has the status it does. {.striped}
+
+**Why is Frame B not here?** There is a Frame B, dropped for a *measurement* flaw
+rather than an estimand shift: it qualified any cell whose geometry merely
+*intersected* a flood polygon, sweeping in whole urban cells with no flood-exposed
+residents (62.9% of B's cells contained zero in-polygon residents). That is a
+contaminated operationalisation of the *same* community target, not a different
+target — so it belongs to the measurement-error family, not this section's
+estimand-choice family.
+
+That is precisely the discipline of this chapter: a sampling-frame choice is not
+just an efficiency knob, it can silently redefine *whose effect you are
+estimating* — even as a different-looking frame (B) leaves the estimand intact and
+fails on measurement instead.
+
+## Community ITT vs. individual direct-exposure: what switching the language changes
+
+The **secondary estimand** is the *individual dose-response*: within flooded
+cells, the effect of *direct* physical/economic exposure (property damage,
+flood depth) on attitudes, with cell fixed effects. Switching from community-ITT
+language to
+individual-direct-exposure language changes all three LJS parts at once:
+
+- **population:** all residents of flooded cells → only directly-exposed
+  residents *within* flooded cells;
+- **contrast:** flooded-community vs. not → more-exposed vs. less-exposed
+  *within the same cell*;
+- **identification:** as-good-as-random flooding across cells → within-cell
+  conditional independence given floor level, dwelling value, etc.
+
+$\delta$ (direct exposure) is the effect *given that you live in a flooded
+community* — it does **not** recover $\tau$ (the total community effect), and
+conflating the two in prose would be a textbook assignment-vs-exposure slip.
+
+## Overlap and the localised estimand
+
+The pre-invitation common-support screen keeps
+all treated cells but restricts the *control* draw to the supported region —
+which, as @sec-breaks notes, **localises the estimand to the overlap region**.
+For the few unsupported treated cells (inland "surprise floods" with no coastal
+counterfactual), the docs pre-specify the handling and note that dropping them
+makes the estimand "the ATT for the *supported* sub-population." Again: the
+target-population consequence is named, not buried.
+
+# Conclusion: be the one watching {#sec-conclusion}
+
+Every paper invites a discussant, even when none is in the room — someone reading
+the design section with one finger on the text and an eyebrow raised, asking *who,
+exactly, this number is about*. That habit is the whole chapter compressed into a
+reflex. You read a results table and your first question is no longer "is this
+significant?" but "significant **for whom**, averaged how?" You write a design
+section and you say the population out loud, because you have seen how quietly it
+moves — from assigned to exposed, from compliers to everyone, from one clinic's
+patients to a national mandate. You referee a draft with the language ready: *the
+design identifies X, but the paper is written as if it identifies Y.*
+
+Every failure in this chapter was the same mistake in a different coat: someone
+answered "effect how?" without first settling "effect for whom?", and the prose
+never noticed when the target underneath it shifted. The taxonomy, the LJS
+anatomy, the assignment-versus-exposure and bias-versus-transportability
+distinctions are not decoration — they are how you hold the target still long
+enough to see whether your design can actually hit it. The point is not more
+notation. It is clearer targets.
+
+None of this guarantees the right answer. It guarantees you are answering a
+question you could state — a lower bar than it sounds, and one most papers clear
+by accident rather than by design. So name the estimand, name the population it is
+about, and ask whether the conclusion is still talking about the same one. The
+estimand quietly changes while the prose stays the same — unless someone is
+watching. **Be the one watching.**
+
+# Final self-test and further reading {#sec-selftest}
+
+## Consolidated self-test
+
+Six questions spanning the chapter. Immediate feedback; no peeking at the
+explanations until you have committed.
+
+```{=html}
+<div class="est-quiz" id="s1">
+<p class="est-stem"><strong>1.</strong> "DiD estimates the ATT" is best read as:</p>
+<label class="est-opt"><input type="radio" name="s1" data-correct="false" data-why="It is not unconditional. DiD targets the ATT only when parallel trends holds; otherwise it estimates a biased number that is neither ATT nor any tidy parameter."> An unconditional fact about DiD</label>
+<label class="est-opt"><input type="radio" name="s1" data-correct="true" data-why="Correct: a method targets an estimand *conditional on its identifying assumptions*. &quot;DiD estimates the ATT&quot; = &quot;DiD estimates the ATT if parallel trends holds.&quot;"> A claim conditional on parallel trends holding</label>
+<label class="est-opt"><input type="radio" name="s1" data-correct="false" data-why="DiD's natural target is the ATT (it builds a counterfactual for the treated), not the ATE, which would require the untreated counterfactual too."> Evidence that DiD targets the ATE</label>
+<button class="est-btn" onclick="estCheck('s1')">Check</button><div class="est-feedback"></div>
+</div>
+
+<div class="est-quiz" id="s2">
+<p class="est-stem"><strong>2.</strong> You trim 12% of treated units for lack of
+common support. The estimand is now:</p>
+<label class="est-opt"><input type="radio" name="s2" data-correct="false" data-why="It is no longer the ATT for *all* treated units — you dropped some, and they may be systematically distinctive."> Still the ATT for all treated units</label>
+<label class="est-opt"><input type="radio" name="s2" data-correct="true" data-why="Right. Trimming localises the estimand to the supported sub-population; report it as such and describe who was dropped."> The ATT for the supported sub-population</label>
+<label class="est-opt"><input type="radio" name="s2" data-correct="false" data-why="The ATE requires the untreated counterfactual too; trimming for overlap does not turn an ATT into an ATE."> The ATE for the full population</label>
+<button class="est-btn" onclick="estCheck('s2')">Check</button><div class="est-feedback"></div>
+</div>
+
+<div class="est-quiz" id="s3">
+<p class="est-stem"><strong>3.</strong> Two IV studies of the same treatment use
+different instruments and report different effects. The first hypothesis should be:</p>
+<label class="est-opt"><input type="radio" name="s3" data-correct="false" data-why="At least one being biased is *possible*, but with different instruments the leading explanation is that they identify LATEs for different complier groups."> One of them must be biased</label>
+<label class="est-opt"><input type="radio" name="s3" data-correct="true" data-why="Correct: different instruments define different complier populations, so different LATEs are expected even if both are internally valid. The divergence is informative about heterogeneity."> They estimate different LATEs for different complier groups</label>
+<label class="est-opt"><input type="radio" name="s3" data-correct="false" data-why="Averaging two LATEs over different, unknown complier populations does not yield a meaningful population parameter."> Average the two to get the ATE</label>
+<button class="est-btn" onclick="estCheck('s3')">Check</button><div class="est-feedback"></div>
+</div>
+
+<div class="est-quiz" id="s4">
+<p class="est-stem"><strong>4.</strong> A community-level "flooded cell" treatment,
+averaged over all residents of flooded cells, is most precisely:</p>
+<label class="est-opt"><input type="radio" name="s4" data-correct="true" data-why="Yes — an assignment-level (ITT-style) community effect. It is a legitimate target, distinct from the individual direct-exposure effect, not a diluted version of it."> An assignment-level community effect (ITT-style)</label>
+<label class="est-opt"><input type="radio" name="s4" data-correct="false" data-why="The individual direct-exposure effect is a different estimand — defined only for directly-exposed residents within flooded cells, with a within-cell contrast."> The effect of personally being flooded</label>
+<label class="est-opt"><input type="radio" name="s4" data-correct="false" data-why="There is no instrument/compliance structure here; this is assignment-level exposure, not a complier LATE."> A LATE for complier residents</label>
+<button class="est-btn" onclick="estCheck('s4')">Check</button><div class="est-feedback"></div>
+</div>
+
+<div class="est-quiz" id="s5">
+<p class="est-stem"><strong>5.</strong> "We estimate the ATE with OLS controlling
+for confounders," effects plainly heterogeneous. The honest label is usually:</p>
+<label class="est-opt"><input type="radio" name="s5" data-correct="false" data-why="OLS with controls recovers the ATE only under homogeneity (or very special weighting). Under heterogeneity it generally does not."> The ATE, as stated</label>
+<label class="est-opt"><input type="radio" name="s5" data-correct="true" data-why="Correct: under heterogeneity, OLS returns a variance-weighted average (Słoczyński shows it mis-weights ATT and ATU) — generally not the ATE."> A variance-weighted average that is generally not the ATE</label>
+<label class="est-opt"><input type="radio" name="s5" data-correct="false" data-why="The ATU is the effect on the untreated specifically; OLS does not target it either."> The ATU</label>
+<button class="est-btn" onclick="estCheck('s5')">Check</button><div class="est-feedback"></div>
+</div>
+
+<div class="est-quiz" id="s6">
+<p class="est-stem"><strong>6.</strong> "Is the problem bias in estimating your
+chosen estimand, or that the chosen estimand isn't the one your conclusion is
+about?" This question separates:</p>
+<label class="est-opt"><input type="radio" name="s6" data-correct="false" data-why="Both sides of the question can arise with any sample size; it is not about precision/power."> Large samples from small samples</label>
+<label class="est-opt"><input type="radio" name="s6" data-correct="true" data-why="Exactly: it forces the distinction between an internal estimation problem (bias for the chosen estimand) and a target-population/transportability problem (right estimate, wrong population for the claim)."> Internal-estimation problems from target-population/transportability problems</label>
+<label class="est-opt"><input type="radio" name="s6" data-correct="false" data-why="It is about *what* is being estimated vs. *how well*, not about which software or estimator package you used."> Frequentist from Bayesian estimation</label>
+<button class="est-btn" onclick="estCheck('s6')">Check</button><div class="est-feedback"></div>
+</div>
+```
+
+## Further reading
+
+- **Lundberg, Johnson & Stewart (2021), "What Is Your Estimand?", *American
+  Sociological Review*** — the unit-quantity / target-population / aggregation
+  anatomy, and the theoretical-vs-empirical estimand distinction. The single
+  most useful paper for this chapter.
+- **Imbens & Angrist (1994), "Identification and Estimation of Local Average
+  Treatment Effects", *Econometrica*** — the LATE theorem.
+- **Angrist, Imbens & Rubin (1996), *JASA*** — IV through potential outcomes; the
+  complier / always-taker / never-taker / defier taxonomy.
+- **Coppock, *Persuasion in Parallel* (2023)** — a model of estimand clarity and
+  of testing whether CATEs are equal across subgroups.
+- **Blair, Coppock & Humphreys, *Research Design in the Social Sciences*** (and
+  the **DeclareDesign** R package) — MIDA, the estimand as Inquiry, and
+  diagnosing designs by simulation.
+- **Cunningham, *Causal Inference: The Mixtape*** — selection-bias decomposition,
+  the perfect-doctor example, accessible LATE treatment.
+- **Huntington-Klein, *The Effect*** — variance-weighting intuition; "the way you
+  estimate the effect matters too."
+- **Słoczyński (2022), *Review of Economics and Statistics*** — how OLS with a
+  binary treatment mis-weights ATT and ATU.
+- **Goodman-Bacon (2021), *Journal of Econometrics*** — the TWFE decomposition,
+  forbidden comparisons, and negative weights under staggered timing.
+- **Heckman & Vytlacil (2005), *Econometrica*** — the MTE and the unification of
+  treatment-effect parameters as weighted integrals of one curve.
+
+## Next time you read or write a design section
+
+::: {.callout-tip appearance="simple"}
+**A pocket checklist.**
+
+*Reading:* (1) What is the **research question**, and does the stated estimand
+actually answer *it*? (2) Can I state the estimand in LJS terms from the text?
+(3) Whose effect is it? (4) Does the method's natural estimand match the claim?
+(5) Does the population stay fixed from design to conclusion? (6) Is this a bias
+problem or a target-population problem?
+
+*Writing:* (1) Write the unit contrast in words, then symbols. (2) Name the exact
+population. (3) State the aggregation. (4) Specify assignment vs. exposure if
+they can differ. (5) Name what you do **not** identify. (6) If you trimmed or
+restricted, say which sub-population the estimand now refers to.
+:::

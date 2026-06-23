@@ -1,0 +1,71 @@
+/* ============================================================
+   Estimands primer — styling for quizzes, contrast boxes,
+   phrasing tables. Self-contained; embedded by embed-resources.
+   ============================================================ */
+
+/* ---- Interactive checkpoint quizzes ---- */
+.est-quiz {
+  border: 1px solid #cfd8dc;
+  border-left: 4px solid #1a5276;
+  border-radius: 6px;
+  background: #f7fafc;
+  padding: 1em 1.2em;
+  margin: 1.6em 0;
+}
+.est-quiz .est-stem { margin-top: 0; }
+.est-quiz label.est-opt {
+  display: block;
+  padding: 0.45em 0.6em;
+  margin: 0.3em 0;
+  border: 1px solid #e0e0e0;
+  border-radius: 5px;
+  background: #fff;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+.est-quiz label.est-opt:hover { background: #eef4f8; border-color: #b0bec5; }
+.est-quiz label.est-opt input { margin-right: 0.6em; }
+.est-quiz label.picked-ok { border-color: #1e8449; background: #e8f8ef; }
+.est-quiz label.picked-no { border-color: #c0392b; background: #fdecea; }
+.est-quiz .est-btn {
+  margin-top: 0.7em;
+  padding: 0.4em 1.1em;
+  border: none;
+  border-radius: 5px;
+  background: #1a5276;
+  color: #fff;
+  font-size: 0.95em;
+  cursor: pointer;
+}
+.est-quiz .est-btn:hover { background: #154360; }
+.est-quiz .est-feedback {
+  display: none;
+  margin-top: 0.8em;
+  padding: 0.7em 0.9em;
+  border-radius: 5px;
+  font-size: 0.96em;
+  line-height: 1.45;
+}
+.est-quiz .est-feedback.show { display: block; }
+.est-quiz .est-feedback.ok      { background: #e8f8ef; border: 1px solid #1e8449; }
+.est-quiz .est-feedback.no      { background: #fdecea; border: 1px solid #c0392b; }
+.est-quiz .est-feedback.neutral { background: #fff8e1; border: 1px solid #f39c12; }
+
+/* ---- Contrast cases ---- */
+.contrast {
+  border: 1px solid #d7bde2;
+  border-left: 4px solid #7d3c98;
+  background: #faf5fc;
+  border-radius: 6px;
+  padding: 0.9em 1.2em;
+  margin: 1.6em 0;
+}
+.contrast > :first-child { margin-top: 0; }
+.contrast > :last-child  { margin-bottom: 0; }
+
+/* ---- Good / acceptable / sloppy phrasing table ---- */
+.phrasing table { font-size: 0.95em; }
+.phrasing td:first-child { white-space: nowrap; font-weight: 600; }
+
+/* ---- General readability ---- */
+.cell-output, pre.sourceCode { font-size: 0.9em; }

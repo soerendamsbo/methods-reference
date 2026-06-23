@@ -1,0 +1,28 @@
+project:
+  type: book
+  output-dir: _book
+
+book:
+  title: "A Curated Methods Reference"
+  subtitle: "Personal notes on research design, estimands, and inference"
+  author: "Søren Damsbo-Svendsen"
+  date: today
+  search: true
+  reader-mode: true
+  chapters:
+    - index.qmd
+    - estimands-primer.qmd
+    - misc-methods.qmd
+
+format:
+  html:
+    theme: cosmo
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    anchor-sections: true
+    fontsize: 1.02em
+    linkcolor: "#1a5276"
+    css: styles.css
+
+engine: knitr

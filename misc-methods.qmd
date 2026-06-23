@@ -1,0 +1,189 @@
+---
+title: "Methods Miscellany"
+engine: knitr
+---
+
+Short, self-contained notes. Each section below stands on its own and answers one
+question; there is no through-line between them. When one of these grows past
+note length, it graduates to its own chapter.
+
+# The ecological fallacy: statistics, estimands, or mechanisms? {#sec-ecological}
+
+The **ecological fallacy** (Robinson 1950) is the error of inferring an
+individual-level relationship from a group-level (aggregate) one. Robinson's own
+case is the canonical illustration: across US states, the share of foreign-born
+residents correlated *positively* with literacy, yet at the individual level
+immigrants were *less* literate than the native-born. Same variables, opposite
+sign, different level. The recurring question is what *kind* of mistake this is —
+a statistical artefact, a causal-identification failure, or a question about
+mechanisms. The honest answer is that the label bundles three distinct layers,
+each answering a different question.
+
+| Layer | What it explains | Causal? |
+|---|---|---|
+| **Aggregation identity** | *How* the error is possible | No — pure statistics |
+| **Estimand–level mismatch** | *Why* it is a *fallacy* (an error, not two facts) | No — but it is the invariant |
+| **Artefact vs. contextual effect** | *How you resolve it* | Yes — unavoidably |
+
+: Three layers bundled under one name. {.striped}
+
+## The mechanism of the error is statistical
+
+A covariance decomposes into within-group and between-group components, and the
+group-mean correlation is a function of the between-group part alone; there is no
+algebraic reason it should track the individual-level correlation, and it can
+differ in magnitude or reverse in sign. This is provable from means and second
+moments — no treatment, no potential outcomes, no causal diagram. **Simpson's
+paradox** is the same fact in discrete form: an association present in every
+stratum can flip when the strata are pooled, purely because group membership
+correlates with both margins. Crucially, Robinson's original example was a
+*descriptive* correlation with no causal estimand in sight, and the inference
+still failed. A phenomenon that bites with zero causal content cannot be
+*constituted* by a causal-modelling failure; it is logically prior to any causal
+layer. This is what the "it's just aggregation" camp gets right — about what
+makes the error *possible*.
+
+## What makes it a *fallacy* is a level-mismatched target
+
+Computing a between-group correlation is not itself fallacious — it is a perfectly
+good fact about groups. It becomes an *error* only when it is used to license a
+claim about a **target defined at a different level**: a relationship among
+*individuals*, over a population of individuals. In the language of the
+[Estimands primer](estimands-primer.qmd), the inference silently swaps both the
+*unit-level quantity* and the *target population*. This is the genuine invariant,
+and it holds whether the target is causal or merely a descriptive association. So
+the deepest correct framing is not "a causal-assumptions failure" but an
+**estimand/level mismatch**, of which the causal case is an important special
+case. Cross-*level* inference is the level-analogue of cross-*population*
+inference (transportability): both move a quantity from where it is identified to
+where it is wanted, and both need a model that licenses the move.
+
+## Resolving it *is* a causal/mechanisms question
+
+When the levels diverge, it is for one of two reasons, and they could not be more
+different:
+
+::: {.contrast}
+**Artefact vs. real context.**
+
+- *Artefact:* the divergence is composition or cross-level confounding — the
+  group number is a distorted reflection of the individual relationship, and the
+  individual level is the target you want.
+- *Genuine contextual effect:* group composition or context does real causal work
+  (peer effects, local institutions, threshold and emergence phenomena). Then the
+  individual-level and group-level relationships are *two different real
+  quantities*, each well-defined at its own level — not a fallacy at all. The
+  entire enterprise of multilevel and contextual-effects modelling exists because
+  cross-level divergence is often substantively meaningful, not an artefact to be
+  "corrected."
+:::
+
+You cannot tell these apart from the aggregates alone. And the moment you *assert*
+that a divergence is "a genuine contextual effect," you have made a
+causal-identification claim and inherited its unverifiable assumptions — no
+group-level confounding, no within-group selection. King's **ecological
+inference** is the proof by construction: crossing levels at all requires
+explicit, externally imposed assumptions (bounds plus a homogeneity/distributional
+model). If it were mere arithmetic, no such model would be needed. So "causal
+assumptions" and "mechanisms" are not competing diagnoses; they are the same
+cross-level structural model viewed formally and substantively. They are the
+*resolution*, not the *essence*.
+
+## Verdict
+
+The ecological fallacy is a **statistical phenomenon that becomes a fallacy only
+via an estimand fixed at the wrong level, and can be resolved only by a
+causal/mechanistic model that licenses (or forbids) the crossing.** Descriptively
+possible → estimand-defined → causally resolved. Calling it "just aggregation"
+misses why it is an *error*; calling it "fundamentally causal" misses that it
+bites on pure description; calling it "about mechanisms" is right about the
+*substance* but does not escape the unverifiable assumptions. Treat a level
+discrepancy as information, not as a number to be silently averaged away: ask
+first *what level my target lives at*, and second *whether the gap between levels
+is an artefact or a contextual effect I should be studying in its own right.*
+
+# Weighting in political science: how much, and which? {#sec-weighting}
+
+"Weights" is one word doing the work of five different things, and most confusion
+about whether political science under-uses them comes from conflating them. This
+note disentangles the families, gives a view on which are actually promising, and
+states when *not* weighting is the right call.
+
+## Five different things called "weights"
+
+1. **Survey/design weights** (post-stratification, raking) — to make a sample
+   represent a target population for *descriptive* quantities.
+2. **Balancing / propensity weights** (IPW, entropy balancing, CBPS, overlap
+   weights) — to identify causal effects under selection-on-observables.
+3. **Heterogeneity-robust panel weights** — the modern staggered
+   difference-in-differences estimators (Callaway–Sant'Anna and kin) are, at heart,
+   a story about getting non-negative, interpretable weights on group-time effects.
+4. **Variance weights** — what OLS *implicitly* applies under heterogeneity. Not a
+   thing you choose; a diagnostic to be aware of.
+5. **Policy-relevance reweighting** — re-weighting an estimate to the population a
+   decision will actually touch. Conceptually important, rare in practice.
+
+These have different statuses, so "do we weight too little?" has no single answer.
+
+## Do we use them too little?
+
+- **Survey/descriptive:** not under-used so much as *transformed*. Since Gelman's
+  "Struggles with survey weighting" (2007), the field has shifted from classical
+  weights toward **MRP** (multilevel regression and post-stratification) for many
+  population-target tasks.
+- **Experiments:** here *not weighting* is usually correct. Randomisation
+  identifies the sample average treatment effect cleanly and at lower variance;
+  weight only when you are making an explicit population (PATE) claim and can
+  defend an ignorable-sampling argument. The instinct to always weight is wrong
+  here.
+- **Observational (selection-on-observables):** this is the strongest case that we
+  could do better. The default of kitchen-sink OLS controls persists where
+  balancing weights or doubly-robust estimation would often be a cleaner main
+  specification — see below.
+
+## Which methods are promising — and your "old invention" instinct
+
+The instinct that weighting is an old idea we drifted away from is half right, and
+the split runs exactly along old-versus-revived:
+
+- **Raw Horvitz–Thompson IPW (1952)** is old, and political science never really
+  put it in main specifications, *for good reason*: when the estimated propensity
+  nears 0 or 1, the weights explode and the variance with them. The distrust is
+  earned.
+- **The balancing-weight revival (2012→) is current, and the field adopted it** —
+  often without calling it "weighting." **Entropy balancing** (Hainmueller, *Political
+  Analysis* 2012) is close to native to political science and very widely used;
+  **CBPS** (Imai & Ratkovic 2014) and **overlap weights** (Li, Morgan & Zaslavsky
+  2018) are the other strong options. These target covariate balance directly
+  rather than balancing a fragile estimated score, which sidesteps the
+  King–Nielsen (2019) critique of propensity-score matching.
+- **Doubly-robust / AIPW** is the one I would actually push: weight *and* model the
+  outcome, and you are consistent if *either* is correct. The caveat matters —
+  "doubly robust" is not "always right": if both models are misspecified the
+  estimate can be worse than either alone.
+
+So the picture is not "we abandoned weights" but "we abandoned the unstable 1952
+version and quietly adopted the well-behaved balancing versions."
+
+## The honest tradeoff
+
+Under correct specification, weighting and plain regression adjustment target the
+*same* estimand; weighting buys transparent balance and a clean choice of estimand
+(ATT vs. ATE, set by the weights) at a variance cost. That is a real
+bias–variance and transparency tradeoff, not a free win, which is why
+regression-with-controls survives in main specs and is not crazy. Doubly-robust
+estimation is the attempt to get both.
+
+::: {.callout-tip appearance="simple"}
+## A defensible default
+- **Experiments:** unweighted, and honest that the estimand is the sample average
+  effect; weight only for an explicit population claim.
+- **Observational (selection-on-observables):** balancing weights (entropy
+  balancing) or doubly-robust as the *main* specification, with OLS-controls as
+  the robustness check — often an upgrade over the reverse.
+- **Survey/descriptive targets:** MRP over classical weights for most tasks.
+
+Reserve "always think about weights" for the *conceptual* point that the estimand
+is a choice (the target population and the aggregation rule) — not as a blanket
+exhortation to reweight every estimate.
+:::

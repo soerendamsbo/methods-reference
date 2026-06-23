@@ -1,0 +1,38 @@
+# Introduction {.unnumbered}
+
+This is a personal, curated reference on research-design and inference methods —
+the place I write things down once, properly, so I do not have to re-derive them
+each time they come up in my own work or in refereeing someone else's. It is
+opinionated by design: where the literature offers a menu, I record the choice I
+would actually defend and why, not a neutral survey.
+
+## How it is organised
+
+The book has two kinds of chapter, and they are read differently.
+
+- **Long, self-contained chapters** develop one topic from intuition to working
+  practice. They are meant to be read start-to-finish at least once, then dipped
+  back into. The [Estimands primer](estimands-primer.qmd) is the first of these:
+  what an estimand is, the taxonomy, where intuition breaks, how designs and
+  sampling pin down the target, and how to write and critique estimands in real
+  papers. It carries interactive checkpoints, worked R, and a running
+  coastal-flooding example.
+
+- **[Methods Miscellany](misc-methods.qmd)** collects *short, independent notes* —
+  one self-contained section per question, each readable on its own. It is where
+  a useful idea lives until (and unless) it grows into a chapter of its own. It
+  currently holds two notes: one on the **ecological fallacy** (is cross-level
+  inference a statistical, an estimand, or a mechanisms problem?), and one on
+  **weighting** in political science (do we use it too little, and which methods
+  are actually promising?).
+
+As the collection grows, expect more long chapters and, very likely, more than
+one miscellany — split by area (causal inference, measurement, text-as-data) once
+any single one gets unwieldy.
+
+## Conventions
+
+British spelling throughout. Code is R unless stated otherwise, and every code
+block shows its computed output inline. Cross-references are live: a mention of a
+section elsewhere in the book is a link. Where a claim leans on a specific result,
+the source is named in the text so it can be traced.
