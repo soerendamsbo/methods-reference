@@ -7,6 +7,11 @@ Short, self-contained notes. Each section below stands on its own and answers on
 question; there is no through-line between them. When one of these grows past
 note length, it graduates to its own chapter.
 
+**Notes in this chapter**
+
+- [The ecological fallacy: statistics, estimands, or mechanisms?](#sec-ecological)
+- [Weighting in political science: how much, and which?](#sec-weighting)
+
 # The ecological fallacy: statistics, estimands, or mechanisms? {#sec-ecological}
 
 The **ecological fallacy** (Robinson 1950) is the error of inferring an
