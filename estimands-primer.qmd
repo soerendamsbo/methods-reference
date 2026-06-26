@@ -1854,46 +1854,45 @@ hunting through the prose.
 
 - Angrist, J. D., Imbens, G. W., & Rubin, D. B. (1996). "Identification of Causal
   Effects Using Instrumental Variables." *Journal of the American Statistical
-  Association* 91(434): 444–455.
+  Association* 91(434).
 - Blair, G., Coppock, A., & Humphreys, M. (2023). *Research Design in the Social
   Sciences: Declaration, Diagnosis, and Redesign.* Princeton University Press.
   (Companion to the **DeclareDesign** R package.)
 - Borusyak, K., Jaravel, X., & Spiess, J. (2024). "Revelations of an Imputation
   Estimator for Unbiased and Efficient Event-Study Estimation." *Review of
-  Economic Studies* 91(6): 3253–3299.
+  Economic Studies* 91(6).
 - Callaway, B., & Sant'Anna, P. H. C. (2021). "Difference-in-Differences with
-  Multiple Time Periods." *Journal of Econometrics* 225(2): 200–230.
+  Multiple Time Periods." *Journal of Econometrics* 225(2).
 - Coppock, A. (2023). *Persuasion in Parallel: How Information Changes Minds about
   Politics.* University of Chicago Press.
 - Cunningham, S. (2021). *Causal Inference: The Mixtape.* Yale University Press.
 - Goodman-Bacon, A. (2021). "Difference-in-Differences with Variation in Treatment
-  Timing." *Journal of Econometrics* 225(2): 254–277.
+  Timing." *Journal of Econometrics* 225(2).
 - Heckman, J. J., & Vytlacil, E. (2005). "Structural Equations, Treatment Effects,
-  and Econometric Policy Evaluation." *Econometrica* 73(3): 669–738.
+  and Econometric Policy Evaluation." *Econometrica* 73(3).
 - Hernán, M. A., Hsu, J., & Healy, B. (2019). "A Second Chance to Get Causal
-  Inference Right: A Classification of Data Science Tasks." *Chance* 32(1): 42–49.
+  Inference Right: A Classification of Data Science Tasks." *Chance* 32(1).
 - Huntington-Klein, N. (2022). *The Effect: An Introduction to Research Design and
   Causality.* Chapman & Hall/CRC.
 - Imai, K., Keele, L., Tingley, D., & Yamamoto, T. (2011). "Unpacking the Black Box
   of Causality: Learning about Causal Mechanisms from Experimental and
-  Observational Studies." *American Political Science Review* 105(4): 765–789.
+  Observational Studies." *American Political Science Review* 105(4).
 - Imbens, G. W., & Angrist, J. D. (1994). "Identification and Estimation of Local
-  Average Treatment Effects." *Econometrica* 62(2): 467–475.
+  Average Treatment Effects." *Econometrica* 62(2).
 - Lundberg, I., Johnson, R., & Stewart, B. M. (2021). "What Is Your Estimand?
   Defining the Target Quantity Connects Statistical Evidence to Theory."
-  *American Sociological Review* 86(3): 532–565.
+  *American Sociological Review* 86(3).
 - Mahoney, J., & Goertz, G. (2006). "A Tale of Two Cultures: Contrasting
-  Quantitative and Qualitative Research." *Political Analysis* 14(3): 227–249.
+  Quantitative and Qualitative Research." *Political Analysis* 14(3).
 - Ragin, C. C. (1987). *The Comparative Method: Moving Beyond Qualitative and
   Quantitative Strategies.* University of California Press.
 - Reichenbach, H. (1956). *The Direction of Time.* University of California Press.
-- Shmueli, G. (2010). "To Explain or to Predict?" *Statistical Science* 25(3):
-  289–310.
+- Shmueli, G. (2010). "To Explain or to Predict?" *Statistical Science* 25(3).
 - Słoczyński, T. (2022). "Interpreting OLS Estimands When Treatment Effects Are
   Heterogeneous: Smaller Groups Get Larger Weights." *Review of Economics and
-  Statistics* 104(3): 501–509.
+  Statistics* 104(3).
 - Sun, L., & Abraham, S. (2021). "Estimating Dynamic Treatment Effects in Event
   Studies with Heterogeneous Treatment Effects." *Journal of Econometrics*
-  225(2): 175–199.
+  225(2).
 - VanderWeele, T. J. (2015). *Explanation in Causal Inference: Methods for
   Mediation and Interaction.* Oxford University Press.
