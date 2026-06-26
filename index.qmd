@@ -1,9 +1,9 @@
 # Introduction {.unnumbered}
 
 This is a personal, curated reference on research-design and inference methods —
-the place I write things down once, properly, so I do not have to re-derive them
-each time they come up in my own work or in refereeing someone else's. It is
-opinionated by design: where the literature offers a menu, I record the choice I
+the place we write things down once, properly, so we do not have to re-derive them
+each time they come up in our own work or in refereeing someone else's. It is
+opinionated by design: where the literature offers a menu, we record the choice we
 would actually defend and why, not a neutral survey.
 
 ## How it is organised

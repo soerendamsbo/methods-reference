@@ -104,8 +104,8 @@ misses why it is an *error*; calling it "fundamentally causal" misses that it
 bites on pure description; calling it "about mechanisms" is right about the
 *substance* but does not escape the unverifiable assumptions. Treat a level
 discrepancy as information, not as a number to be silently averaged away: ask
-first *what level my target lives at*, and second *whether the gap between levels
-is an artefact or a contextual effect I should be studying in its own right.*
+first *what level our target lives at*, and second *whether the gap between levels
+is an artefact or a contextual effect we should be studying in its own right.*
 
 # Weighting in political science: how much, and which? {#sec-weighting}
 
@@ -162,7 +162,7 @@ the split runs exactly along old-versus-revived:
   2018) are the other strong options. These target covariate balance directly
   rather than balancing a fragile estimated score, which sidesteps the
   King–Nielsen (2019) critique of propensity-score matching.
-- **Doubly-robust / AIPW** is the one I would actually push: weight *and* model the
+- **Doubly-robust / AIPW** is the one we would actually push: weight *and* model the
   outcome, and you are consistent if *either* is correct. The caveat matters —
   "doubly robust" is not "always right": if both models are misspecified the
   estimate can be worse than either alone.

@@ -339,7 +339,7 @@ mass, the simple mean is the wrong aggregation no matter how cleanly you have
 named the population.
 :::
 
-## Theoretical vs. empirical (statistical) estimand
+## Theoretical vs. empirical (statistical) estimand {#sec-empirical}
 
 Keep two layers distinct:
 
@@ -362,20 +362,148 @@ is one of the most common things worth saying in a referee report.
 
 Not every estimand is a potential-outcome contrast. A *descriptive* estimand —
 the gender gap in turnout, the share of a legislature's bills that are amended,
-the trend in partisan affect — still has the full LJS anatomy: a **unit-level
-quantity** that is simply a measured attribute rather than a $Y_i(1)-Y_i(0)$
-difference; a **target population** to average over; and an **aggregation rule**
-(mean, share, quantile, between-group difference). What changes is *identification*.
-There is no counterfactual to defend, so the work is entirely about **measurement
-and sampling** — does the variable capture the concept, and does the sample
-represent the population? — not about confounding or assignment.
+the trend in partisan affect, the racial wealth gap, the age profile of turnout —
+still has the full LJS anatomy: a **unit-level quantity** that is simply a
+measured attribute rather than a $Y_i(1)-Y_i(0)$ difference; a **target
+population** to average over; and an **aggregation rule** (mean, share, quantile,
+between-group difference, a Gini, a slope through time). What changes is
+*identification*. There is usually no counterfactual to defend, so the work is
+about **measurement and sampling** — does the variable capture the concept, and
+does the sample represent the population? — rather than confounding or assignment.
 
 The discipline is identical: "the gender gap in turnout" is under-specified until
 you name *whose* turnout (which population), *measured how*, and *summarised how*.
 A precise descriptive estimand is no less demanding than a causal one; it just
 fails in different ways — measurement error and sampling bias rather than
 confounding. Much of @sec-sampling applies to descriptive and causal estimands
-alike, because both depend on the same target-population slot.
+alike, because both lean on the same target-population slot.
+
+### "Descriptive" does not mean "assumption-free"
+
+It is tempting to treat a descriptive estimand as the safe, identification-free
+option — you are "just describing the data." That holds only when the target
+population *is* the sample in hand. The moment you want the gender gap in *the
+electorate* rather than in *your respondents*, the target-population slot does
+exactly the work identification does for a causal estimand: a descriptive mean
+over a non-random sample either targets the realised sample (honest but often
+trivial) or a super-population reachable only through sampling assumptions — an
+identification claim in plain clothes. Measurement carries the same hidden load:
+"support for the regime" in an authoritarian survey is a descriptive estimand
+whose validity hinges on preference falsification, an assumption every bit as
+load-bearing as ignorability. Some descriptive measures even fold a counterfactual
+into the *unit-level quantity* — the gerrymandering "efficiency gap" is reported
+as a description of a districting plan but is defined against a hypothetical
+fair-map baseline. Description is theory-laden and assumption-laden; what it
+declines to make is specifically the *intervention* assumption.
+
+### Is "causal vs. descriptive" exhaustive? {#sec-beyond}
+
+No. The cleaner picture is a trichotomy — **description, prediction, causal
+inference** (Hernán, Hsu, and Healy 2019) — but the three are *not* disjoint bins
+of quantities. They are three things you can want from the *same* functional,
+distinguished by the target population and by what you assume stays fixed:
+
+- **Description** summarises *this* population as it is.
+- **Prediction** minimises expected loss on *unseen* units, and is judged by
+  generalisation rather than fit to the data you have. Its estimand is a genuine
+  object — the risk-minimising (Bayes) predictor, or a summary of its performance
+  such as AUC or calibration — not "whatever the algorithm outputs."
+- **Causal inference** asks what the outcome would be under an *intervention* that
+  holds the rest of the world fixed.
+
+The categories leak at their edges, and the leak is instructive rather than
+embarrassing. A forecast becomes a *causal* claim the moment a decision conditions
+on it under intervention: a weather forecast is prediction; a recidivism risk
+score used to *deny* bail is a counterfactual claim about reoffending under the
+action taken. What sorts a number into one box is not its formula but **what you
+assume is invariant** — across resampling (description), across new draws
+(prediction), across interventions (causation).
+
+::: {.callout-tip appearance="simple"}
+## The same functional, three estimands
+Run OLS of $Y$ on $X$ and the slope you get is the **best linear predictor** of
+$Y$ given $X$ — a well-defined functional of the joint distribution, identical
+whether you go on to call it a description, a forecasting tool, or a causal proxy.
+The number does not know which you meant. This is the @sec-empirical distinction
+seen from the other side: one *empirical* estimand can stand in for a descriptive,
+a predictive, or a causal *theoretical* estimand, and only the last makes you
+defend a counterfactual. Shmueli (2010) supplies the sharp version — the model
+that predicts best is generally *not* the one that explains best — which is the
+cleanest proof that prediction and causal explanation are different targets, not
+relabelled versions of one.
+:::
+
+A worked case pins the slogan down. The **Kitagawa–Oaxaca–Blinder decomposition**
+of a wage gap into an "explained" part (differences in characteristics) and an
+"unexplained" part (differences in returns) is an *algebraic identity* — a purely
+descriptive functional of the joint distribution. The labels do the damage:
+"unexplained" is routinely read as discrimination, a causal quantity the
+arithmetic never licensed. The same numbers become a *causal* mediation estimand
+only under sequential-ignorability assumptions (Imai et al. 2011; VanderWeele
+2015). Same functional, two theoretical estimands, identification the entire
+difference between them — the load-bearing move of this whole chapter in
+miniature.
+
+A further flavour strains the anatomy rather than fitting it: **latent and
+structural estimands** — an ideal point, an item-response discrimination
+parameter, the number of latent classes, a utility coefficient. These feel
+descriptive, but they are not properties you would *see* with infinite data; they
+exist only relative to a measurement or behavioural model, and their validity is
+hostage to it. The LJS question — "what is the unit-level quantity, knowable with
+infinite data?" — has no clean answer here. Flag the stretch rather than forcing
+the slots.
+
+### Is an association "always preliminary causal"?
+
+A common intuition says every association is really a down-payment on a causal
+question — that we report correlations only because we are after effects and
+cannot yet identify them. The steelman is Reichenbach's common-cause principle: a
+robust association *demands* an explanation, and the menu — $X$ causes $Y$, $Y$
+causes $X$, or a common cause — is exhausted by causal structures, so an
+association always *raises* a causal question even when it does not answer one.
+There is real sociology here: much "descriptive" work is causal-in-denial, and the
+tell is operational — when the abstract reports an *association* but the
+conclusion reaches for *drives*, *leads to*, *the effect of*, or *because*, the
+honest estimand was causal all along and the descriptive label is a liability
+shield.
+
+But the metaphysics does not follow from the sociology. Descriptive and predictive
+*theoretical* estimands legitimately terminate at the association: the racial
+wealth gap, the age profile of turnout, a calibrated risk score, the
+mal-apportionment of a legislature are the quantity of interest, not a way-station
+to one. The democratic peace — "democracies rarely fight each other" — shows both
+sides at once: a genuine descriptive regularity that an entire literature then
+(often silently) treats as causal. The association is the *empirical* estimand;
+what makes it "preliminary causal" or not is the *theoretical* estimand you have
+signed up to defend. Collapsing the two is exactly the slippage @sec-empirical
+warns against.
+
+### Do all research questions have an estimand? {#sec-allquestions}
+
+Most well-posed *quantitative* questions imply at least one estimand, and forcing
+the mapping is much of the value of this framework. A vague question implies a
+*family* of estimands — the recurring bug this chapter keeps flagging — and the
+remedy is to pick one. Two honest exceptions are worth keeping straight:
+
+- **Pre-estimand exploration.** Genuinely hypothesis-generating work may have no
+  target yet because the question is not yet formed. That is legitimate — and
+  different from **estimand-evasion**, where a precise question exists and the
+  analyst declines to commit *because* committing would invite identification
+  scrutiny. "We are just exploring" should not launder the second case as the
+  first.
+- **Structural / existence questions.** "Is this electorate's preference
+  single-peaked?", "how many parties does this system support in equilibrium?" are
+  about model structure, not a functional of a population distribution; calling
+  their answers "estimands" dilutes the word.
+
+A brief note on **qualitative research**: single-case causal claims and
+set-theoretic claims (necessity and sufficiency in QCA) *can* be re-described in
+estimand terms — with a logical relation, not a mean, in the aggregation slot —
+but this is translation into a vocabulary those traditions did not choose, and it
+imports counterfactual or probabilistic commitments their proponents (Ragin;
+Mahoney and Goertz 2006) explicitly resist. Interpretive and concept-forming work
+is a genuine *outside* to the framework, not a not-yet-formalised estimand;
+claiming otherwise is the mirror-image fig leaf.
 
 ## Same design, different estimand — because the population moved {#sec-popmoved}
 
@@ -661,7 +789,7 @@ identification-first route of @sec-derive).
 
 [^rdlabel]: Sources differ on the label: some call the sharp-RD target "the LATE
 at the threshold," others "the ATE at the cutoff." Both mean the boundary effect
-for units at the cutoff. I use *boundary CATE* to avoid colliding with this
+for units at the cutoff. We use *boundary CATE* to avoid colliding with this
 chapter's LATE entry, which reserves "LATE" for the complier effect.
 
 ## TWFE and staggered adoption: a panel-data problem {#sec-twfe}

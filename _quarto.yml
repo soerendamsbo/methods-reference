@@ -5,7 +5,9 @@ project:
 book:
   title: "A Curated Methods Reference"
   subtitle: "Personal notes on research design, estimands, and inference"
-  author: "Søren Damsbo-Svendsen"
+  author:
+    - "Søren Damsbo-Svendsen"
+    - "Claude Code"
   date: today
   search: true
   reader-mode: true
