@@ -1739,7 +1739,7 @@ about, and ask whether the conclusion is still talking about the same one. The
 estimand quietly changes while the prose stays the same — unless someone is
 watching. **Be the one watching.**
 
-# Final self-test and further reading {#sec-selftest}
+# Final self-test {#sec-selftest}
 
 ## Consolidated self-test
 
@@ -1802,32 +1802,6 @@ about?" This question separates:</p>
 </div>
 ```
 
-## Further reading
-
-- **Lundberg, Johnson & Stewart (2021), "What Is Your Estimand?", *American
-  Sociological Review*** — the unit-quantity / target-population / aggregation
-  anatomy, and the theoretical-vs-empirical estimand distinction. The single
-  most useful paper for this chapter.
-- **Imbens & Angrist (1994), "Identification and Estimation of Local Average
-  Treatment Effects", *Econometrica*** — the LATE theorem.
-- **Angrist, Imbens & Rubin (1996), *JASA*** — IV through potential outcomes; the
-  complier / always-taker / never-taker / defier taxonomy.
-- **Coppock, *Persuasion in Parallel* (2023)** — a model of estimand clarity and
-  of testing whether CATEs are equal across subgroups.
-- **Blair, Coppock & Humphreys, *Research Design in the Social Sciences*** (and
-  the **DeclareDesign** R package) — MIDA, the estimand as Inquiry, and
-  diagnosing designs by simulation.
-- **Cunningham, *Causal Inference: The Mixtape*** — selection-bias decomposition,
-  the perfect-doctor example, accessible LATE treatment.
-- **Huntington-Klein, *The Effect*** — variance-weighting intuition; "the way you
-  estimate the effect matters too."
-- **Słoczyński (2022), *Review of Economics and Statistics*** — how OLS with a
-  binary treatment mis-weights ATT and ATU.
-- **Goodman-Bacon (2021), *Journal of Econometrics*** — the TWFE decomposition,
-  forbidden comparisons, and negative weights under staggered timing.
-- **Heckman & Vytlacil (2005), *Econometrica*** — the MTE and the unification of
-  treatment-effect parameters as weighted integrals of one curve.
-
 ## Next time you read or write a design section
 
 ::: {.callout-tip appearance="simple"}
@@ -1847,10 +1821,9 @@ restricted, say which sub-population the estimand now refers to.
 
 # References {#sec-references}
 
-Full bibliographic details for every work cited in this chapter, in one place.
-The annotated **Further reading** in @sec-selftest is the subset to start with;
-this list is for tracking down a specific citation (e.g., Shmueli) without
-hunting through the prose.
+Full bibliographic details for every work cited in this chapter, in one place —
+for tracking down a specific citation (e.g., Shmueli) without hunting through the
+prose. The annotated **Further reading** below is the subset to start with.
 
 - Angrist, J. D., Imbens, G. W., & Rubin, D. B. (1996). "Identification of Causal
   Effects Using Instrumental Variables." *Journal of the American Statistical
@@ -1896,3 +1869,32 @@ hunting through the prose.
   225(2).
 - VanderWeele, T. J. (2015). *Explanation in Causal Inference: Methods for
   Mediation and Interaction.* Oxford University Press.
+
+## Further reading {#sec-furtherreading}
+
+Where to start — the annotated subset of the works above, with what each is good
+for:
+
+- **Lundberg, Johnson & Stewart (2021), "What Is Your Estimand?", *American
+  Sociological Review*** — the unit-quantity / target-population / aggregation
+  anatomy, and the theoretical-vs-empirical estimand distinction. The single
+  most useful paper for this chapter.
+- **Imbens & Angrist (1994), "Identification and Estimation of Local Average
+  Treatment Effects", *Econometrica*** — the LATE theorem.
+- **Angrist, Imbens & Rubin (1996), *JASA*** — IV through potential outcomes; the
+  complier / always-taker / never-taker / defier taxonomy.
+- **Coppock, *Persuasion in Parallel* (2023)** — a model of estimand clarity and
+  of testing whether CATEs are equal across subgroups.
+- **Blair, Coppock & Humphreys, *Research Design in the Social Sciences*** (and
+  the **DeclareDesign** R package) — MIDA, the estimand as Inquiry, and
+  diagnosing designs by simulation.
+- **Cunningham, *Causal Inference: The Mixtape*** — selection-bias decomposition,
+  the perfect-doctor example, accessible LATE treatment.
+- **Huntington-Klein, *The Effect*** — variance-weighting intuition; "the way you
+  estimate the effect matters too."
+- **Słoczyński (2022), *Review of Economics and Statistics*** — how OLS with a
+  binary treatment mis-weights ATT and ATU.
+- **Goodman-Bacon (2021), *Journal of Econometrics*** — the TWFE decomposition,
+  forbidden comparisons, and negative weights under staggered timing.
+- **Heckman & Vytlacil (2005), *Econometrica*** — the MTE and the unification of
+  treatment-effect parameters as weighted integrals of one curve.
